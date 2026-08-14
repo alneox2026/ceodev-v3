@@ -12,20 +12,32 @@ REPOSITORY="${REPOSITORY:-ceosystem}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
-TAG="${TAG:-latest}"
+# Auto-detect latest built tag from Artifact Registry if not explicitly provided
+if [ -z "${TAG:-}" ] || [ "${TAG}" = "latest" ]; then
+  echo "--> Detecting newest image tag in Artifact Registry..."
+  DETECTED_TAG="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3" --include-tags --sort-by=~CREATE_TIME --limit=1 --format='value(tags)' 2>/dev/null | tr ',' '\n' | grep -v '^latest$' | head -n 1 || true)"
+  TAG="${DETECTED_TAG:-latest}"
+fi
+
+echo "--> Using Image Tag: ${TAG}"
+
 GATEWAY_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3:${TAG}"
 WORKER_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-persistence-worker-v3:${TAG}"
 BILLING_API_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-billing-api-v3:${TAG}"
 
-
 echo "================================================================="
 echo " Deploying Middleware Infrastructure (Terraform V3)"
-echo " Project ID : ${PROJECT_ID}"
-echo " Region     : ${REGION}"
-echo " Image Tag  : ${TAG}"
+echo " Project ID        : ${PROJECT_ID}"
+echo " Region            : ${REGION}"
+echo " Gateway Image     : ${GATEWAY_IMAGE}"
+echo " Worker Image      : ${WORKER_IMAGE}"
+echo " Billing API Image : ${BILLING_API_IMAGE}"
 echo "================================================================="
 
 cd "${ROOT_DIR}/infra/terraform"
+
+# Clean any stale generated tfvars
+rm -f terraform.auto.tfvars.json
 
 # Ensure backend.hcl exists
 if [ ! -f "backend.hcl" ]; then
