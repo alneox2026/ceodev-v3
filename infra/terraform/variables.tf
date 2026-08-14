@@ -70,8 +70,9 @@ variable "eventarc_service_account_name" {
 variable "billing_reconciler_service_account_name" {
   description = "Service account name for the Cloud Scheduler billing reconciler."
   type        = string
-  default     = "ceoagent-billing-reconciler-sa-v3"
+  default     = "ceoagent-reconciler-sa-v3"
 }
+
 
 variable "pubsub_topic_name" {
   description = "Topic for completed turn events."
