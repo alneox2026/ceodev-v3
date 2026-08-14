@@ -1,7 +1,8 @@
 resource "google_logging_metric" "worker_retryable_failures" {
-  name        = "worker_retryable_failures"
-  description = "Counts retryable persistence and delete failures emitted by the Maxima worker."
+  name        = "worker_retryable_failures_v3"
+  description = "Counts retryable persistence and delete failures emitted by the Maxima worker v3."
   filter      = <<-EOT
+
 resource.type="cloud_run_revision"
 resource.labels.service_name="${var.worker_service_name}"
 (jsonPayload.event="worker_event_persist_retryable_failure" OR jsonPayload.event="worker_thread_delete_retryable_failure")

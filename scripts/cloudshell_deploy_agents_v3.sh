@@ -12,9 +12,10 @@ REPOSITORY="${REPOSITORY:-ceosystem}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
-TAG="$(git rev-parse --short=12 HEAD)"
+TAG="${TAG:-latest}"
 MAXIMA_CLOUDRUN_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-v3:${TAG}"
 MAXIMA_CLOUDRUN_STREAM_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-stream-v3:${TAG}"
+
 
 echo "================================================================="
 echo " Deploying Cloud Run ADK Agents"
