@@ -8,8 +8,8 @@ from common.billing import (
     customer_wallet_document_id,
 )
 from common.schemas import TurnCompletedEvent
-from services.agent_persistence_worker.app.core.config import get_settings
-from services.agent_persistence_worker.app.services.billing_settlement import (
+from services.agent_persistence_worker_v3.app.core.config import get_settings
+from services.agent_persistence_worker_v3.app.services.billing_settlement import (
     BillingSettlementService,
 )
 
@@ -56,9 +56,10 @@ def _event():
 
 
 def _seed_reservation_and_ledger(client):
+    settings = get_settings()
     user_id = "user-1"
     wallet_id = customer_wallet_document_id(user_id)
-    client.documents[("customer_wallets", wallet_id)] = {
+    client.documents[(settings.wallets_collection, wallet_id)] = {
         "schema_version": 1,
         "billing_subject_id": user_id,
         "owner_uid": user_id,
@@ -68,7 +69,7 @@ def _seed_reservation_and_ledger(client):
         "reserved_credit_nanos": 500_000_000,
         "settled_usage_nanos": 0,
     }
-    client.documents[("billing_reservations", "turn-1")] = {
+    client.documents[(settings.billing_reservations_collection, "turn-1")] = {
         "reservation_id": "turn-1",
         "turn_id": "turn-1",
         "request_id": "req-1",
@@ -79,7 +80,7 @@ def _seed_reservation_and_ledger(client):
         "reserved_amount_nanos": 500_000_000,
         "status": "reserved",
     }
-    client.documents[("agent_billing_ledger", "turn-1")] = {
+    client.documents[(settings.billing_ledger_collection, "turn-1")] = {
         "turn_id": "turn-1",
         "uid": user_id,
         "billing_subject_id": user_id,
@@ -92,6 +93,7 @@ def _seed_reservation_and_ledger(client):
 
 def test_settlement_debits_actual_usage_releases_the_rest_and_is_idempotent(monkeypatch):
     _enable_worker_billing(monkeypatch)
+    settings = get_settings()
     client = FakeClient()
     _seed_reservation_and_ledger(client)
     service = BillingSettlementService(
@@ -107,14 +109,15 @@ def test_settlement_debits_actual_usage_releases_the_rest_and_is_idempotent(monk
     assert result.settled_amount_nanos == 100_000_000
     assert result.released_amount_nanos == 400_000_000
     assert duplicate_result == result
-    wallet = client.documents[("customer_wallets", customer_wallet_document_id("user-1"))]
+    wallet = client.documents[(settings.wallets_collection, customer_wallet_document_id("user-1"))]
     assert wallet["available_credit_nanos"] == 900_000_000
     assert wallet["reserved_credit_nanos"] == 0
     assert wallet["settled_usage_nanos"] == 100_000_000
-    wallet_transaction = client.documents[("wallet_transactions", "usage_turn-1")]
+    wallet_transaction = client.documents[(settings.wallet_transactions_collection, "usage_turn-1")]
     assert wallet_transaction["amount_nanos"] == 100_000_000
     period_id = customer_billing_period_document_id("user-1", "2026-08")
-    period = client.documents[("customer_billing_periods", period_id)]
+    period = client.documents[(settings.customer_billing_periods_collection, period_id)]
     assert period["usage_estimated_nanos"] == 100_000_000
     assert period["monthly_service_fee_nanos"] == 5_000_000_000
     assert period["monthly_service_fee_status"] == "pending_collection"
+

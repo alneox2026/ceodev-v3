@@ -1,11 +1,11 @@
-# Middleware V2 Deployment Runbook
+# Middleware V3 Deployment Runbook
 
-This runbook covers the first live deployment of the new middleware stack:
+This runbook covers the isolated deployment of the V3 middleware stack:
 
-- public Cloud Run gateway
-- authenticated Cloud Run persistence worker
-- public Stripe Billing API (Checkout and signed webhooks)
-- Pub/Sub topic for completed turn events
+- public Cloud Run gateway (`ceoagent-gateway-v3`)
+- authenticated Cloud Run persistence worker (`ceoagent-persistence-worker-v3`)
+- public Stripe Billing API (`ceoagent-billing-api-v3`)
+- Pub/Sub topic for completed turn events (`agent-turn-events-v3`)
 - Eventarc trigger from Pub/Sub to the worker
 
 ## 1. Build and push container images
@@ -19,17 +19,17 @@ Preferred path:
 Manual equivalent:
 
 ```bash
-docker build -f services/agent_gateway/Dockerfile -t us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-gateway:latest .
-docker push us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-gateway:latest
-docker build -f services/agent_persistence_worker/Dockerfile -t us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker:latest .
-docker push us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker:latest
-docker build -f services/billing_api/Dockerfile -t us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-billing-api:latest .
-docker push us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-billing-api:latest
+docker build -f services/agent_gateway_v3/Dockerfile -t us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-gateway-v3:latest .
+docker push us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-gateway-v3:latest
+docker build -f services/agent_persistence_worker_v3/Dockerfile -t us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker-v3:latest .
+docker push us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker-v3:latest
+docker build -f services/billing_api_v3/Dockerfile -t us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-billing-api-v3:latest .
+docker push us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-billing-api-v3:latest
 ```
 
 ## 2. Prepare Terraform variables
 
-Copy [terraform.tfvars.example](/c:/Users/Admin/Desktop/CEOsystem-dev3/infra/terraform/terraform.tfvars.example) to `terraform.tfvars` and fill in the real image URIs.
+Copy [terraform.tfvars.example](/c:/Users/Admin/Desktop/ANTIGRAVITY/CEOsystem-dev3/infra/terraform/terraform.tfvars.example) to `terraform.tfvars` and fill in the real image URIs.
 
 Launch defaults for this repo:
 
@@ -61,12 +61,13 @@ gcloud storage buckets create gs://ceo-dev123-tfstate \
   --uniform-bucket-level-access
 ```
 
-2. Copy [backend.hcl.example](/c:/Users/Admin/Desktop/CEOsystem-dev3/infra/terraform/backend.hcl.example) to `backend.hcl` and adjust the bucket or prefix if needed.
+2. Copy [backend.hcl.example](/c:/Users/Admin/Desktop/ANTIGRAVITY/CEOsystem-dev3/infra/terraform/backend.hcl.example) to `backend.hcl` and adjust the bucket or prefix (`prefix = "ceodev-v3/middleware"`).
+
 
 3. Initialize Terraform with the backend:
 
 ```bash
-terraform init -backend-config=backend.hcl -migrate-state
+terraform init -backend-config=backend.hcl -reconfigure
 ```
 
 ## 3. Apply infrastructure
@@ -75,15 +76,15 @@ Preferred path:
 
 ```powershell
 .\scripts\deploy_infra.ps1 `
-  -GatewayImage "us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-gateway:latest" `
-  -WorkerImage "us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker:latest" `
-  -BillingApiImage "us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-billing-api:latest" `
+  -GatewayImage "us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-gateway-v3:latest" `
+  -WorkerImage "us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker-v3:latest" `
+  -BillingApiImage "us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-billing-api-v3:latest" `
   -AllowedOrigins "https://ceoappdev.flutterflow.app" `
   -BillingApiCheckoutSuccessUrl "https://ceoappdev.flutterflow.app/billing-complete?session_id={CHECKOUT_SESSION_ID}" `
   -BillingApiCheckoutCancelUrl "https://ceoappdev.flutterflow.app/billing-cancelled"
 ```
 
-Manual equivalent from [infra/terraform](/c:/Users/Admin/Desktop/CEOsystem-dev3/infra/terraform):
+Manual equivalent from [infra/terraform](/c:/Users/Admin/Desktop/ANTIGRAVITY/CEOsystem-dev3/infra/terraform):
 
 ```bash
 terraform init -backend-config=backend.hcl -reconfigure
@@ -93,11 +94,12 @@ terraform apply
 
 This Terraform stack creates:
 
-- the gateway Cloud Run service
-- the worker Cloud Run service
-- the Billing API Cloud Run service and its separate runtime service account
+- the gateway Cloud Run service (`ceoagent-gateway-v3`)
+- the worker Cloud Run service (`ceoagent-persistence-worker-v3`)
+- the Billing API Cloud Run service (`ceoagent-billing-api-v3`) and its separate runtime service account
 - service accounts with least-privilege runtime roles
-- the `agent-turn-events` Pub/Sub topic
+- the `agent-turn-events-v3` Pub/Sub topic
+
 - the Eventarc trigger that invokes the worker on `/events/pubsub`
 - Cloud Monitoring alert policies for:
   - gateway 5xx responses
@@ -114,7 +116,7 @@ Use `gateway_url` as the canonical FlutterFlow base URL.
 
 ## 4. Smoke test the gateway
 
-Use [smoke_gateway.ps1](/c:/Users/Admin/Desktop/CEOsystem-dev3/scripts/smoke_gateway.ps1).
+Use [smoke_gateway.ps1](/c:/Users/Admin/Desktop/ANTIGRAVITY/CEOsystem-dev3/scripts/smoke_gateway.ps1).
 
 Full rollout helper:
 
@@ -191,14 +193,14 @@ Do not wire the streaming endpoint into FlutterFlow until the buffered launch ha
 
 ## 7. Rollback
 
-Use the one-page runbook: [maxima-rollback-runbook.md](/c:/Users/Admin/Desktop/CEOsystem-dev3/docs/maxima-rollback-runbook.md)
+Use the one-page runbook: [maxima-rollback-runbook.md](/c:/Users/Admin/Desktop/ANTIGRAVITY/CEOsystem-dev3/docs/maxima-rollback-runbook.md)
 
 ## 8. Script inventory
 
-- [build_images.ps1](/c:/Users/Admin/Desktop/CEOsystem-dev3/scripts/build_images.ps1): build and push all three container images
-- [deploy_infra.ps1](/c:/Users/Admin/Desktop/CEOsystem-dev3/scripts/deploy_infra.ps1): write Terraform vars, run `init`, `plan`, and optionally `apply`
-- [rollout_maxima.ps1](/c:/Users/Admin/Desktop/CEOsystem-dev3/scripts/rollout_maxima.ps1): build, deploy, fetch the deterministic gateway URL, and run buffered smoke tests (streaming optional)
-- [smoke_gateway.ps1](/c:/Users/Admin/Desktop/CEOsystem-dev3/scripts/smoke_gateway.ps1): direct buffered or stream call against an existing gateway URL
+- [build_images.ps1](/c:/Users/Admin/Desktop/ANTIGRAVITY/CEOsystem-dev3/scripts/build_images.ps1): build and push all three container images
+- [deploy_infra.ps1](/c:/Users/Admin/Desktop/ANTIGRAVITY/CEOsystem-dev3/scripts/deploy_infra.ps1): write Terraform vars, run `init`, `plan`, and optionally `apply`
+- [rollout_maxima.ps1](/c:/Users/Admin/Desktop/ANTIGRAVITY/CEOsystem-dev3/scripts/rollout_maxima.ps1): build, deploy, fetch the deterministic gateway URL, and run buffered smoke tests (streaming optional)
+- [smoke_gateway.ps1](/c:/Users/Admin/Desktop/ANTIGRAVITY/CEOsystem-dev3/scripts/smoke_gateway.ps1): direct buffered or stream call against an existing gateway URL
 
 ## Sources
 

@@ -4,8 +4,8 @@ from types import SimpleNamespace
 import pytest
 
 from common.schemas import AgentConfig, ChatRequest
-from services.agent_gateway.app.core.errors import ApiError
-from services.agent_gateway.app.services.chat_session_service import ChatSessionService
+from services.agent_gateway_v3.app.core.errors import ApiError
+from services.agent_gateway_v3.app.services.chat_session_service import ChatSessionService
 
 
 def _agent_config() -> AgentConfig:

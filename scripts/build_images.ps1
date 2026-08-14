@@ -2,11 +2,12 @@ param(
     [string]$ProjectId = "ceo-dev123",
     [string]$Region = "us-central1",
     [string]$Repository = "ceosystem",
-    [string]$GatewayServiceName = "ceoagent-gateway",
-    [string]$WorkerServiceName = "ceoagent-persistence-worker",
-    [string]$BillingApiServiceName = "ceoagent-billing-api",
+    [string]$GatewayServiceName = "ceoagent-gateway-v3",
+    [string]$WorkerServiceName = "ceoagent-persistence-worker-v3",
+    [string]$BillingApiServiceName = "ceoagent-billing-api-v3",
     [string]$Tag = "latest"
 )
+
 
 $ErrorActionPreference = "Stop"
 
@@ -24,19 +25,19 @@ $workerImage = "$Region-docker.pkg.dev/$ProjectId/$Repository/$WorkerServiceName
 $billingApiImage = "$Region-docker.pkg.dev/$ProjectId/$Repository/$BillingApiServiceName`:$Tag"
 
 Write-Host "Building gateway image: $gatewayImage"
-docker build -f services/agent_gateway/Dockerfile -t $gatewayImage .
+docker build -f services/agent_gateway_v3/Dockerfile -t $gatewayImage .
 
 Write-Host "Pushing gateway image: $gatewayImage"
 docker push $gatewayImage
 
 Write-Host "Building worker image: $workerImage"
-docker build -f services/agent_persistence_worker/Dockerfile -t $workerImage .
+docker build -f services/agent_persistence_worker_v3/Dockerfile -t $workerImage .
 
 Write-Host "Pushing worker image: $workerImage"
 docker push $workerImage
 
 Write-Host "Building Billing API image: $billingApiImage"
-docker build -f services/billing_api/Dockerfile -t $billingApiImage .
+docker build -f services/billing_api_v3/Dockerfile -t $billingApiImage .
 
 Write-Host "Pushing Billing API image: $billingApiImage"
 docker push $billingApiImage

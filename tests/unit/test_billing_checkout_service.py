@@ -5,10 +5,10 @@ from pathlib import Path
 import pytest
 
 from common.billing import customer_billing_account_document_id
-from services.billing_api.app.core.config import BillingApiSettings
-from services.billing_api.app.core.errors import BillingApiError
-from services.billing_api.app.services.billing_catalog import load_billing_catalog
-from services.billing_api.app.services.checkout_service import CheckoutService
+from services.billing_api_v3.app.core.config import BillingApiSettings
+from services.billing_api_v3.app.core.errors import BillingApiError
+from services.billing_api_v3.app.services.billing_catalog import load_billing_catalog
+from services.billing_api_v3.app.services.checkout_service import CheckoutService
 
 
 class FakeSnapshot:

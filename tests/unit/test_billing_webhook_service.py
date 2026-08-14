@@ -8,14 +8,14 @@ from common.billing import (
     customer_billing_period_document_id,
     customer_wallet_document_id,
 )
-from services.billing_api.app.core.config import BillingApiSettings
-from services.billing_api.app.core.errors import BillingApiError
-from services.billing_api.app.services.billing_catalog import load_billing_catalog
-from services.billing_api.app.services.firestore_records import (
+from services.billing_api_v3.app.core.config import BillingApiSettings
+from services.billing_api_v3.app.core.errors import BillingApiError
+from services.billing_api_v3.app.services.billing_catalog import load_billing_catalog
+from services.billing_api_v3.app.services.firestore_records import (
     build_initial_billing_account_document,
 )
-from services.billing_api.app.services.stripe_gateway import StripeGatewayError
-from services.billing_api.app.services.webhook_service import StripeWebhookService
+from services.billing_api_v3.app.services.stripe_gateway import StripeGatewayError
+from services.billing_api_v3.app.services.webhook_service import StripeWebhookService
 
 
 class FakeSnapshot:

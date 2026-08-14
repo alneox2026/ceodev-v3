@@ -4,8 +4,8 @@ import httpx
 import pytest
 
 from common.schemas import ThreadDeleteRequestedEvent
-from services.agent_persistence_worker.app.core.errors import RetryableWorkerError
-from services.agent_persistence_worker.app.services.cloud_run_adk_sessions import (
+from services.agent_persistence_worker_v3.app.core.errors import RetryableWorkerError
+from services.agent_persistence_worker_v3.app.services.cloud_run_adk_sessions import (
     CloudRunAdkSessionNotFoundError,
     CloudRunAdkSessionsClient,
 )
@@ -34,7 +34,7 @@ def test_delete_session_calls_cloud_run_adk_session_endpoint(monkeypatch) -> Non
         return httpx.Response(204)
 
     monkeypatch.setattr(
-        "services.agent_persistence_worker.app.services.cloud_run_adk_sessions.id_token.fetch_id_token",
+        "services.agent_persistence_worker_v3.app.services.cloud_run_adk_sessions.id_token.fetch_id_token",
         lambda request, audience: "identity-token",
     )
     client = CloudRunAdkSessionsClient(
@@ -55,7 +55,7 @@ def test_delete_session_treats_404_as_already_deleted(monkeypatch) -> None:
         return httpx.Response(404, json={"detail": "not found"})
 
     monkeypatch.setattr(
-        "services.agent_persistence_worker.app.services.cloud_run_adk_sessions.id_token.fetch_id_token",
+        "services.agent_persistence_worker_v3.app.services.cloud_run_adk_sessions.id_token.fetch_id_token",
         lambda request, audience: "identity-token",
     )
     client = CloudRunAdkSessionsClient(
@@ -71,7 +71,7 @@ def test_delete_session_non_success_is_retryable(monkeypatch) -> None:
         return httpx.Response(503, text="unavailable")
 
     monkeypatch.setattr(
-        "services.agent_persistence_worker.app.services.cloud_run_adk_sessions.id_token.fetch_id_token",
+        "services.agent_persistence_worker_v3.app.services.cloud_run_adk_sessions.id_token.fetch_id_token",
         lambda request, audience: "identity-token",
     )
     client = CloudRunAdkSessionsClient(
@@ -96,7 +96,7 @@ def test_delete_session_non_success_redacts_sensitive_body(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "services.agent_persistence_worker.app.services.cloud_run_adk_sessions.id_token.fetch_id_token",
+        "services.agent_persistence_worker_v3.app.services.cloud_run_adk_sessions.id_token.fetch_id_token",
         lambda request, audience: "identity-token",
     )
     client = CloudRunAdkSessionsClient(

@@ -13,19 +13,19 @@ variable "region" {
 variable "gateway_service_name" {
   description = "Cloud Run service name for the public agent gateway."
   type        = string
-  default     = "ceoagent-gateway"
+  default     = "ceoagent-gateway-v3"
 }
 
 variable "worker_service_name" {
   description = "Cloud Run service name for the persistence worker."
   type        = string
-  default     = "ceoagent-persistence-worker"
+  default     = "ceoagent-persistence-worker-v3"
 }
 
 variable "billing_api_service_name" {
   description = "Cloud Run service name for the public Stripe Billing API."
   type        = string
-  default     = "ceoagent-billing-api"
+  default     = "ceoagent-billing-api-v3"
 }
 
 variable "gateway_image" {
@@ -46,37 +46,37 @@ variable "billing_api_image" {
 variable "gateway_service_account_name" {
   description = "Service account name for the gateway service."
   type        = string
-  default     = "ceoagent-gateway-sa"
+  default     = "ceoagent-gateway-sa-v3"
 }
 
 variable "worker_service_account_name" {
   description = "Service account name for the worker service."
   type        = string
-  default     = "ceoagent-worker-sa"
+  default     = "ceoagent-worker-sa-v3"
 }
 
 variable "billing_api_service_account_name" {
   description = "Service account name for the Stripe Billing API."
   type        = string
-  default     = "ceoagent-billing-api-sa"
+  default     = "ceoagent-billing-api-sa-v3"
 }
 
 variable "eventarc_service_account_name" {
   description = "Service account name for the Eventarc trigger."
   type        = string
-  default     = "ceoagent-eventarc-sa"
+  default     = "ceoagent-eventarc-sa-v3"
 }
 
 variable "billing_reconciler_service_account_name" {
   description = "Service account name for the Cloud Scheduler billing reconciler."
   type        = string
-  default     = "ceoagent-billing-reconciler-sa"
+  default     = "ceoagent-billing-reconciler-sa-v3"
 }
 
 variable "pubsub_topic_name" {
   description = "Topic for completed turn events."
   type        = string
-  default     = "agent-turn-events"
+  default     = "agent-turn-events-v3"
 }
 
 variable "pubsub_publish_timeout_seconds" {
@@ -149,7 +149,7 @@ variable "upstream_read_timeout_seconds" {
 variable "firestore_threads_collection" {
   description = "Top-level Firestore collection for chat threads."
   type        = string
-  default     = "agent_threads"
+  default     = "agent_threads_v3"
 }
 
 variable "firestore_messages_subcollection" {
@@ -161,50 +161,51 @@ variable "firestore_messages_subcollection" {
 variable "firestore_idempotency_collection" {
   description = "Top-level Firestore collection for processed event ids."
   type        = string
-  default     = "processed_events"
+  default     = "processed_events_v3"
 }
 
 variable "firestore_billing_ledger_collection" {
   description = "Top-level immutable Firestore collection for completed-turn billing ledgers."
   type        = string
-  default     = "agent_billing_ledger"
+  default     = "agent_billing_ledger_v3"
 }
 
 variable "firestore_customer_wallets_collection" {
   description = "Top-level Firestore collection for server-owned prepaid customer wallets."
   type        = string
-  default     = "customer_wallets"
+  default     = "customer_wallets_v3"
 }
 
 variable "firestore_billing_reservations_collection" {
   description = "Top-level Firestore collection for per-turn prepaid-credit reservations."
   type        = string
-  default     = "billing_reservations"
+  default     = "billing_reservations_v3"
 }
 
 variable "firestore_wallet_transactions_collection" {
   description = "Top-level immutable Firestore collection for customer wallet transactions."
   type        = string
-  default     = "wallet_transactions"
+  default     = "wallet_transactions_v3"
 }
 
 variable "firestore_customer_billing_periods_collection" {
   description = "Top-level Firestore collection for customer monthly billing aggregates."
   type        = string
-  default     = "customer_billing_periods"
+  default     = "customer_billing_periods_v3"
 }
 
 variable "firestore_customer_billing_accounts_collection" {
   description = "Top-level private Firestore collection mapping billing subjects to Stripe customer and subscription state."
   type        = string
-  default     = "customer_billing_accounts"
+  default     = "customer_billing_accounts_v3"
 }
 
 variable "firestore_stripe_webhook_events_collection" {
   description = "Top-level private Firestore collection for immutable Stripe webhook event receipts."
   type        = string
-  default     = "stripe_webhook_events"
+  default     = "stripe_webhook_events_v3"
 }
+
 
 variable "billing_api_stripe_secret_key_secret_id" {
   description = "Existing Secret Manager secret ID containing the Stripe secret API key. The value is never managed by Terraform."

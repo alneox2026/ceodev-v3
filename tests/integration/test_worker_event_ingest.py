@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
-from services.agent_persistence_worker.app.main import app
-from services.agent_persistence_worker.app.api import routes_events
+from services.agent_persistence_worker_v3.app.main import app
+from services.agent_persistence_worker_v3.app.api import routes_events
 
 
 client = TestClient(app)

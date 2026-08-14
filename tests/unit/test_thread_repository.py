@@ -1,7 +1,7 @@
 import pytest
 
-from services.agent_gateway.app.core.errors import ApiError
-from services.agent_gateway.app.services.thread_repository import ThreadRepository
+from services.agent_gateway_v3.app.core.errors import ApiError
+from services.agent_gateway_v3.app.services.thread_repository import ThreadRepository
 
 
 class FakeSnapshot:

@@ -1,9 +1,9 @@
 from fastapi.testclient import TestClient
 
-from services.billing_api.app.api import routes_billing
-from services.billing_api.app.main import app
-from services.billing_api.app.services.checkout_service import CheckoutSessionResult
-from services.billing_api.app.services.webhook_service import WebhookResult
+from services.billing_api_v3.app.api import routes_billing
+from services.billing_api_v3.app.main import app
+from services.billing_api_v3.app.services.checkout_service import CheckoutSessionResult
+from services.billing_api_v3.app.services.webhook_service import WebhookResult
 
 
 client = TestClient(app)

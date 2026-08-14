@@ -8,7 +8,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Message,
 
-    [string]$AgentId = "maxima",
+    [string]$AgentId = "maxima_v3",
+
     [string]$ThreadId,
     [string]$SessionId,
     [switch]$Stream

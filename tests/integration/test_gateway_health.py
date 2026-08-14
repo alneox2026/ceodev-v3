@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from services.agent_gateway.app.main import app
+from services.agent_gateway_v3.app.main import app
 
 
 client = TestClient(app)

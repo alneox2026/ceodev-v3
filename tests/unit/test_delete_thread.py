@@ -1,7 +1,7 @@
 import asyncio
 
 from common.schemas import ThreadDeleteRequestedEvent
-from services.agent_persistence_worker.app.services.delete_thread import DeleteThreadService
+from services.agent_persistence_worker_v3.app.services.delete_thread import DeleteThreadService
 
 
 class FakeIdempotencyStore:

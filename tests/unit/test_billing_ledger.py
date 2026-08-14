@@ -1,5 +1,5 @@
 from common.schemas import TurnCompletedEvent
-from services.agent_persistence_worker.app.services.billing_ledger import (
+from services.agent_persistence_worker_v3.app.services.billing_ledger import (
     BillingLedgerRepository,
 )
 

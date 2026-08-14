@@ -7,8 +7,8 @@
 
 ## Target state
 
-- `services/agent_gateway` becomes the public middleware.
-- `services/agent_persistence_worker` consumes Pub/Sub events and writes Firestore.
+- `services/agent_gateway_v3` becomes the public middleware.
+- `services/agent_persistence_worker_v3` consumes Pub/Sub events and writes Firestore.
 
 ## Cutover rule
 
@@ -65,4 +65,4 @@ Buffered request body:
 
 Persist and reuse `thread_id` and `session_id` from the first successful response for follow-up turns.
 
-For rollback, preserve the legacy `main.py` endpoint configuration and use [maxima-rollback-runbook.md](/c:/Users/Admin/Desktop/CEOsystem-dev3/docs/maxima-rollback-runbook.md).
+For rollback, preserve the legacy `main.py` endpoint configuration and use [maxima-rollback-runbook.md](/c:/Users/Admin/Desktop/ANTIGRAVITY/CEOsystem-dev3/docs/maxima-rollback-runbook.md).

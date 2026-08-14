@@ -23,10 +23,11 @@ $smokeScript = Join-Path $PSScriptRoot "smoke_gateway.ps1"
 $terraformDir = Join-Path $PSScriptRoot "..\\infra\\terraform"
 
 if ($SkipBuild) {
-    $gatewayImage = "$Region-docker.pkg.dev/$ProjectId/$Repository/ceoagent-gateway`:$Tag"
-    $workerImage = "$Region-docker.pkg.dev/$ProjectId/$Repository/ceoagent-persistence-worker`:$Tag"
-    $billingApiImage = "$Region-docker.pkg.dev/$ProjectId/$Repository/ceoagent-billing-api`:$Tag"
+    $gatewayImage = "$Region-docker.pkg.dev/$ProjectId/$Repository/ceoagent-gateway-v3`:$Tag"
+    $workerImage = "$Region-docker.pkg.dev/$ProjectId/$Repository/ceoagent-persistence-worker-v3`:$Tag"
+    $billingApiImage = "$Region-docker.pkg.dev/$ProjectId/$Repository/ceoagent-billing-api-v3`:$Tag"
 }
+
 else {
     $buildResult = & $buildScript `
         -ProjectId $ProjectId `

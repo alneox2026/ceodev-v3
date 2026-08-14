@@ -23,8 +23,15 @@ from common.billing import customer_wallet_document_id
 
 
 NANOS_PER_USD = Decimal("1000000000")
-WALLETS_COLLECTION = "customer_wallets"
-TRANSACTIONS_COLLECTION = "wallet_transactions"
+WALLETS_COLLECTION = os.getenv(
+    "FIRESTORE_CUSTOMER_WALLETS_COLLECTION",
+    "customer_wallets_v3",
+).strip() or "customer_wallets_v3"
+TRANSACTIONS_COLLECTION = os.getenv(
+    "FIRESTORE_WALLET_TRANSACTIONS_COLLECTION",
+    "wallet_transactions_v3",
+).strip() or "wallet_transactions_v3"
+
 
 
 def main() -> None:
@@ -40,7 +47,7 @@ def main() -> None:
         from google.cloud import firestore
     except ImportError as exc:
         raise SystemExit(
-            "google-cloud-firestore is required. Install services/agent_persistence_worker/requirements.txt first."
+            "google-cloud-firestore is required. Install services/agent_persistence_worker_v3/requirements.txt first."
         ) from exc
 
     client = firestore.Client(project=project_id)

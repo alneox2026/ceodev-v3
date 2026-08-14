@@ -17,7 +17,7 @@ gcloud config set project "$PROJECT_ID"
 
 echo "Deploying Maxima to Agent Runtime..."
 (
-  cd adkagents/maxima
+  cd adkagents/maxima_v3
   agents-cli install
   agents-cli deploy \
     --project "$PROJECT_ID" \
@@ -31,7 +31,7 @@ import json
 import pathlib
 import re
 
-metadata_path = pathlib.Path("adkagents/maxima/deployment_metadata.json")
+metadata_path = pathlib.Path("adkagents/maxima_v3/deployment_metadata.json")
 metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
 runtime = metadata["remote_agent_runtime_id"]
 match = re.search(r"/locations/([^/]+)/", runtime)
@@ -50,12 +50,12 @@ echo "Maxima resource: ${MAXIMA_RESOURCE_NAME}"
 echo "Maxima runtime region: ${MAXIMA_RUNTIME_REGION}"
 
 TAG="$(git rev-parse --short HEAD)-$(date +%Y%m%d%H%M%S)"
-GATEWAY_IMAGE="${GATEWAY_REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/ceoagent-gateway:gateway-${TAG}"
+GATEWAY_IMAGE="${GATEWAY_REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/ceoagent-gateway-v3:gateway-${TAG}"
 
 cat > cloudbuild-gateway.yaml <<EOF
 steps:
 - name: gcr.io/cloud-builders/docker
-  args: ["build", "-f", "services/agent_gateway/Dockerfile", "-t", "${GATEWAY_IMAGE}", "."]
+  args: ["build", "-f", "services/agent_gateway_v3/Dockerfile", "-t", "${GATEWAY_IMAGE}", "."]
 images:
 - "${GATEWAY_IMAGE}"
 EOF
@@ -64,13 +64,14 @@ echo "Building gateway image: ${GATEWAY_IMAGE}"
 gcloud builds submit --project "$PROJECT_ID" --config cloudbuild-gateway.yaml .
 
 echo "Deploying gateway..."
-gcloud run services update ceoagent-gateway \
+gcloud run services update ceoagent-gateway-v3 \
   --image "$GATEWAY_IMAGE" \
   --update-env-vars "AGENT_MAXIMA_RESOURCE_NAME=${MAXIMA_RESOURCE_NAME},AGENT_MAXIMA_REGION=${MAXIMA_RUNTIME_REGION}" \
   --region "$GATEWAY_REGION" \
   --project "$PROJECT_ID"
 
-GATEWAY_URL="$(gcloud run services describe ceoagent-gateway \
+GATEWAY_URL="$(gcloud run services describe ceoagent-gateway-v3 \
+
   --region "$GATEWAY_REGION" \
   --project "$PROJECT_ID" \
   --format='value(status.url)')"

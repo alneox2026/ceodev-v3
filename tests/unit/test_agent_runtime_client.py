@@ -7,9 +7,9 @@ import httpx
 import pytest
 
 from common.schemas import AgentConfig
-from services.agent_gateway.app.core.config import get_settings
-from services.agent_gateway.app.core.errors import ApiError
-from services.agent_gateway.app.services.agent_runtime_client import (
+from services.agent_gateway_v3.app.core.config import get_settings
+from services.agent_gateway_v3.app.core.errors import ApiError
+from services.agent_gateway_v3.app.services.agent_runtime_client import (
     AgentRuntimeClient,
     BUFFERED_RUN_CONFIG,
     STREAM_RUN_CONFIG,

@@ -1,4 +1,4 @@
-from services.agent_gateway.app.services.request_context import build_request_context
+from services.agent_gateway_v3.app.services.request_context import build_request_context
 
 
 def test_request_context_uses_server_turn_id_when_client_turn_id_is_supplied() -> None:

@@ -1,4 +1,4 @@
-from services.agent_gateway.app.services.turn_assembler import TurnAssembler
+from services.agent_gateway_v3.app.services.turn_assembler import TurnAssembler
 
 
 def test_turn_assembler_collects_text_and_usage() -> None:

@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from services.billing_api.app.main import app
+from services.billing_api_v3.app.main import app
 
 
 client = TestClient(app)

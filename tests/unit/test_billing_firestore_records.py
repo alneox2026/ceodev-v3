@@ -6,7 +6,7 @@ from common.billing import (
     customer_billing_account_document_id,
     stripe_webhook_event_document_id,
 )
-from services.billing_api.app.services.firestore_records import (
+from services.billing_api_v3.app.services.firestore_records import (
     BillingRecordError,
     build_initial_billing_account_document,
     build_stripe_webhook_event_document,

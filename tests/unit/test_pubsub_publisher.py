@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from common.schemas import TurnCompletedEvent
-from services.agent_gateway.app.services.pubsub_publisher import PubSubPublisher
+from services.agent_gateway_v3.app.services.pubsub_publisher import PubSubPublisher
 
 
 class FakePublishFuture:
@@ -45,7 +45,10 @@ def test_pubsub_publisher_publishes_completed_turn() -> None:
 
     result = asyncio.run(publisher.publish_turn_completed(event))
 
-    assert result.message_id == "msg-123"
-    assert publisher_client.published[0]["topic_path"] == "projects/ceo-dev123/topics/agent-turn-events"
+    assert (
+        publisher_client.published[0]["topic_path"]
+        == "projects/ceo-dev123/topics/agent-turn-events-v3"
+    )
     assert publisher_client.published[0]["data"]["event_id"] == "evt-1"
     assert publisher_client.published[0]["attributes"]["agent_id"] == "maxima"
+

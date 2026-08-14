@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from common.schemas import TurnCompletedEvent
-from services.agent_persistence_worker.app.services.firestore_threads import (
+from services.agent_persistence_worker_v3.app.services.firestore_threads import (
     THREAD_PREVIEW_MAX_CHARS,
     FirestoreThreadsRepository,
 )

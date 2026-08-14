@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 import pytest
 
 from common.billing import customer_wallet_document_id
-from services.agent_gateway.app.core.config import get_settings
-from services.agent_gateway.app.core.errors import ApiError
-from services.agent_gateway.app.services.wallet_reservations import (
+from services.agent_gateway_v3.app.core.config import get_settings
+from services.agent_gateway_v3.app.core.errors import ApiError
+from services.agent_gateway_v3.app.services.wallet_reservations import (
     WalletReservationService,
 )
 
@@ -105,10 +105,11 @@ def _wallet(user_id, available_credit_nanos=1_000_000_000):
 
 def test_reserve_moves_credit_to_a_per_turn_hold(monkeypatch):
     _enable_billing(monkeypatch)
+    settings = get_settings()
     client = FakeClient()
     user_id = "user-1"
     wallet_id = customer_wallet_document_id(user_id)
-    client.documents[("customer_wallets", wallet_id)] = _wallet(user_id)
+    client.documents[(settings.wallets_collection, wallet_id)] = _wallet(user_id)
     service = WalletReservationService(
         firestore_client_factory=lambda: client,
         transaction_runner=_run_transaction,
@@ -125,20 +126,21 @@ def test_reserve_moves_credit_to_a_per_turn_hold(monkeypatch):
 
     assert reservation is not None
     assert reservation.reserved_amount_nanos == 500_000_000
-    wallet = client.documents[("customer_wallets", wallet_id)]
+    wallet = client.documents[(settings.wallets_collection, wallet_id)]
     assert wallet["available_credit_nanos"] == 500_000_000
     assert wallet["reserved_credit_nanos"] == 500_000_000
-    reservation_doc = client.documents[("billing_reservations", "turn-1")]
+    reservation_doc = client.documents[(settings.billing_reservations_collection, "turn-1")]
     assert reservation_doc["status"] == "reserved"
     assert reservation_doc["request_id"] == "req-1"
 
 
 def test_reserve_rejects_insufficient_credit_before_model_execution(monkeypatch):
     _enable_billing(monkeypatch)
+    settings = get_settings()
     client = FakeClient()
     user_id = "user-1"
     wallet_id = customer_wallet_document_id(user_id)
-    client.documents[("customer_wallets", wallet_id)] = _wallet(
+    client.documents[(settings.wallets_collection, wallet_id)] = _wallet(
         user_id,
         available_credit_nanos=499_999_999,
     )
@@ -159,6 +161,7 @@ def test_reserve_rejects_insufficient_credit_before_model_execution(monkeypatch)
 
     assert exc_info.value.status_code == 402
     assert exc_info.value.code == "insufficient_credit"
-    wallet = client.documents[("customer_wallets", wallet_id)]
+    wallet = client.documents[(settings.wallets_collection, wallet_id)]
     assert wallet["available_credit_nanos"] == 499_999_999
     assert wallet["reserved_credit_nanos"] == 0
+

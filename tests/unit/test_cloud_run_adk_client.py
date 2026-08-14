@@ -6,8 +6,8 @@ import httpx
 import pytest
 
 from common.schemas import AgentConfig, ChatRequest
-from services.agent_gateway.app.core.errors import ApiError
-from services.agent_gateway.app.services.cloud_run_adk_client import CloudRunAdkClient
+from services.agent_gateway_v3.app.core.errors import ApiError
+from services.agent_gateway_v3.app.services.cloud_run_adk_client import CloudRunAdkClient
 
 
 class _FakeResponse:

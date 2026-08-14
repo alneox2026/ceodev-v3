@@ -1,8 +1,8 @@
 import pytest
 
-from services.agent_gateway.app.core.config import get_settings
-from services.agent_gateway.app.core.errors import ApiError
-from services.agent_gateway.app.services.agent_registry import get_agent_config, load_registry
+from services.agent_gateway_v3.app.core.config import get_settings
+from services.agent_gateway_v3.app.core.errors import ApiError
+from services.agent_gateway_v3.app.services.agent_registry import get_agent_config, load_registry
 
 
 @pytest.fixture(autouse=True)

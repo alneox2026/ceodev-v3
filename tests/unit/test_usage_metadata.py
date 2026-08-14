@@ -1,4 +1,4 @@
-from services.agent_gateway.app.services.usage_metadata import (
+from services.agent_gateway_v3.app.services.usage_metadata import (
     extract_usage_metadata,
     normalize_usage_metadata,
 )

@@ -1,7 +1,7 @@
 import base64
 import json
 
-from services.agent_persistence_worker.app.models.pubsub import PubSubPushEnvelope
+from services.agent_persistence_worker_v3.app.models.pubsub import PubSubPushEnvelope
 
 
 def test_pubsub_envelope_decodes_json_payload() -> None:

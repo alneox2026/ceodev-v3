@@ -4,11 +4,11 @@ from types import SimpleNamespace
 from fastapi.testclient import TestClient
 
 from common.schemas import AgentConfig
-from services.agent_gateway.app.main import app
-from services.agent_gateway.app.api import routes_chat
-from services.agent_gateway.app.api import routes_stream
-from services.agent_gateway.app.core.errors import ApiError
-from services.agent_gateway.app.services.agent_runtime_client import UpstreamStreamEvent
+from services.agent_gateway_v3.app.main import app
+from services.agent_gateway_v3.app.api import routes_chat
+from services.agent_gateway_v3.app.api import routes_stream
+from services.agent_gateway_v3.app.core.errors import ApiError
+from services.agent_gateway_v3.app.services.agent_runtime_client import UpstreamStreamEvent
 
 
 client = TestClient(app)

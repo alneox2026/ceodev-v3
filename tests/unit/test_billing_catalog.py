@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from services.billing_api.app.services.billing_catalog import (
+from services.billing_api_v3.app.services.billing_catalog import (
     BillingCatalogError,
     load_billing_catalog,
 )

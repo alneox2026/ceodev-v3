@@ -1,7 +1,7 @@
 import asyncio
 
 from common.schemas import TurnCompletedEvent
-from services.agent_persistence_worker.app.services.persist_turn import (
+from services.agent_persistence_worker_v3.app.services.persist_turn import (
     PersistTurnService,
 )
 

@@ -1,4 +1,4 @@
-from services.agent_gateway.app.services.sse_adapter import format_sse
+from services.agent_gateway_v3.app.services.sse_adapter import format_sse
 
 
 def test_format_sse_emits_expected_frame() -> None:

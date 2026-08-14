@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 
 from common.schemas import ThreadLifecycleResponse
-from services.agent_gateway.app.api import routes_threads
-from services.agent_gateway.app.main import app
+from services.agent_gateway_v3.app.api import routes_threads
+from services.agent_gateway_v3.app.main import app
 
 
 client = TestClient(app)
