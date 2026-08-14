@@ -41,28 +41,44 @@ def _resolve_agent_engine_session_uri() -> str | None:
         LOGGER.warning("USE_IN_MEMORY_SESSION is enabled; ADK sessions are not durable.")
         return None
 
-    project_id = _required_env("GOOGLE_CLOUD_PROJECT")
-    location = _required_env("GOOGLE_CLOUD_LOCATION")
+    explicit_uri = os.getenv("AGENT_ENGINE_SESSION_URI", "").strip()
+    if explicit_uri:
+        LOGGER.info("Using explicit Agent Engine sessions backend URI.")
+        return explicit_uri
+
+    explicit_resource_name = os.getenv("AGENT_ENGINE_RESOURCE_NAME", "").strip()
+    if explicit_resource_name:
+        LOGGER.info("Using explicit Agent Engine sessions backend resource.")
+        return f"agentengine://{explicit_resource_name}"
+
+    project_id = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("PROJECT_ID", "ceo-dev123")
+    location = os.getenv("GOOGLE_CLOUD_LOCATION") or os.getenv("REGION", "us-central1")
     agent_name = os.getenv(
         "AGENT_ENGINE_SESSION_NAME",
         DEFAULT_AGENT_ENGINE_SESSION_NAME,
     )
 
-    vertexai.init(project=project_id, location=location)
-    existing_agents = list(agent_engines.list(filter=f"display_name={agent_name}"))
-    agent_runtime = existing_agents[0] if existing_agents else agent_engines.create(
-        display_name=agent_name,
-    )
-    resource_name = getattr(agent_runtime, "resource_name", None) or getattr(
-        agent_runtime,
-        "name",
-        None,
-    )
-    if not resource_name:
-        raise RuntimeError(f"Could not resolve Agent Engine resource for {agent_name}.")
+    try:
+        vertexai.init(project=project_id, location=location)
+        existing_agents = list(agent_engines.list(filter=f"display_name={agent_name}"))
+        agent_runtime = existing_agents[0] if existing_agents else agent_engines.create(
+            display_name=agent_name,
+        )
+        resource_name = getattr(agent_runtime, "resource_name", None) or getattr(
+            agent_runtime,
+            "name",
+            None,
+        )
+        if not resource_name:
+            LOGGER.warning("Could not resolve Agent Engine resource for %s; using in-memory sessions.", agent_name)
+            return None
 
-    LOGGER.info("Using Agent Engine sessions backend: %s", resource_name)
-    return f"agentengine://{resource_name}"
+        LOGGER.info("Using Agent Engine sessions backend: %s", resource_name)
+        return f"agentengine://{resource_name}"
+    except Exception as exc:
+        LOGGER.warning("Failed to initialize Vertex Agent Engine session backend (%s); continuing with local sessions.", exc)
+        return None
+
 
 
 _setup_cloud_logging()

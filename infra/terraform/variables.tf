@@ -365,8 +365,9 @@ variable "billing_reconciliation_enabled" {
 variable "gateway_min_instances" {
   description = "Minimum number of gateway instances."
   type        = number
-  default     = 1
+  default     = 0
 }
+
 
 variable "gateway_max_instances" {
   description = "Maximum number of gateway instances."

@@ -96,7 +96,12 @@ gcloud run deploy maxima-cloudrun-v3 \
   --project="${PROJECT_ID}" \
   --platform=managed \
   --no-allow-unauthenticated \
-  --set-env-vars="MAXIMA_MODEL=gemini-2.5-flash"
+  --min-instances=0 \
+  --max-instances=20 \
+  --memory=1Gi \
+  --cpu=1 \
+  --timeout=300s \
+  --set-env-vars="MAXIMA_MODEL=gemini-2.5-flash,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},PROJECT_ID=${PROJECT_ID}"
 
 echo "--> Deploying maxima-cloudrun-stream-v3 service..."
 gcloud run deploy maxima-cloudrun-stream-v3 \
@@ -105,7 +110,13 @@ gcloud run deploy maxima-cloudrun-stream-v3 \
   --project="${PROJECT_ID}" \
   --platform=managed \
   --no-allow-unauthenticated \
-  --set-env-vars="MAXIMA_MODEL=gemini-2.5-flash"
+  --min-instances=0 \
+  --max-instances=20 \
+  --memory=1Gi \
+  --cpu=1 \
+  --timeout=300s \
+  --set-env-vars="MAXIMA_MODEL=gemini-2.5-flash,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},PROJECT_ID=${PROJECT_ID}"
+
 
 # ------------------------------------------------------------------------------
 # 3. Deploy Middleware Infrastructure via Terraform
