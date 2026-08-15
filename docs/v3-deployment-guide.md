@@ -22,8 +22,12 @@ This document is the definitive guide and quick-reference manual for deploying a
 | **Persistence Worker (V3)** | `https://ceoagent-persistence-worker-v3-281577273798.us-central1.run.app` | Private (Eventarc Pub/Sub Invocation) |
 | **Cloud Run Agent (Buffered V3)** | `https://maxima-cloudrun-v3-281577273798.us-central1.run.app` | Private (Gateway IAM Auth) |
 | **Cloud Run Agent (Stream V3)** | `https://maxima-cloudrun-stream-v3-281577273798.us-central1.run.app` | Private (Gateway IAM Auth) |
+| **Agent Platform Agent (Buffered V3)** | `projects/281577273798/locations/us-central1/reasoningEngines/6357932034928672768` | Vertex AI Reasoning Engine |
+| **Agent Platform Agent (Stream V3)** | `projects/281577273798/locations/us-central1/reasoningEngines/1267738556093169664` | Vertex AI Reasoning Engine |
 | **Pub/Sub Turn Topic** | `projects/ceo-dev123/topics/agent-turn-events-v3` | Managed Pub/Sub |
 | **Eventarc Trigger** | `ceoagent-persistence-worker-v3-turn-events` | Cloud Run Eventarc Trigger |
+
+
 
 ---
 
