@@ -1,11 +1,5 @@
 {
   "remote_agent_runtime_id": "None",
   "deployment_timestamp": "None",
-  "pending_operation": {
-    "operation_name": "projects/281577273798/locations/us-central1/reasoningEngines/5776927001067651072/operations/4410702551364665344",
-    "project": "ceo-dev123",
-    "location": "us-central1",
-    "deployment_target": "agent_runtime",
-    "started_at": "2026-04-30T08:49:49.126519+00:00"
-  }
-}
+  "pending_operation": "None"
+}

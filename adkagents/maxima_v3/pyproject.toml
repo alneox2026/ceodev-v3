@@ -95,8 +95,9 @@ packages = ["app","frontend"]
 [tool.agents-cli]
 # Generation metadata - enables CLI commands to understand project context
 # These fields allow any generated project to work as a remote template
-name = "maxima"
+name = "maxima_v3"
 description = "Simple ReAct agent"
+
 base_template = "adk"
 agent_directory = "app"
 region = "us-central1"
