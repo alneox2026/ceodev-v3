@@ -24,8 +24,11 @@ This document is the definitive guide and quick-reference manual for deploying a
 | **Cloud Run Agent (Stream V3)** | `https://maxima-cloudrun-stream-v3-281577273798.us-central1.run.app` | Private (Gateway IAM Auth) |
 | **Agent Platform Agent (Buffered V3)** | `projects/281577273798/locations/us-central1/reasoningEngines/6357932034928672768` | Vertex AI Reasoning Engine |
 | **Agent Platform Agent (Stream V3)** | `projects/281577273798/locations/us-central1/reasoningEngines/1267738556093169664` | Vertex AI Reasoning Engine |
+| **CR Agent Session Backend (Buffered V3)** | `projects/281577273798/locations/us-central1/reasoningEngines/7597266357385691136` | Vertex AI Session Storage |
+| **CR Agent Session Backend (Stream V3)** | `projects/281577273798/locations/us-central1/reasoningEngines/5253987176269479936` | Vertex AI Session Storage |
 | **Pub/Sub Turn Topic** | `projects/ceo-dev123/topics/agent-turn-events-v3` | Managed Pub/Sub |
 | **Eventarc Trigger** | `ceoagent-persistence-worker-v3-turn-events` | Cloud Run Eventarc Trigger |
+
 
 
 
