@@ -85,12 +85,13 @@ service cloud.firestore {
                                   && resource.data.uid == request.auth.uid;
 
       // Messages Subcollection V3: Read/write by parent thread owner
-      match /messages/{messageId} {
+      match /messages_v3/{messageId} {
         allow create: if request.auth != null;
         allow read, update, delete: if request.auth != null
                                     && get(/databases/$(database)/documents/agent_threads_v3/$(threadId)).data.uid == request.auth.uid;
       }
     }
+
 
 
     // =========================================================================

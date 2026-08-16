@@ -219,11 +219,12 @@ match /customer_billing_periods_v3/{periodId} {
 match /agent_threads_v3/{threadId} {
   allow read, write: if request.auth != null
                      && resource.data.owner_uid == request.auth.uid;
-  match /messages/{messageId} {
+  match /messages_v3/{messageId} {
     allow read, write: if request.auth != null
                        && resource.data.owner_uid == request.auth.uid;
   }
 }
+
 
 match /billing_reservations_v3/{reservationId} {
   allow read, create, update, delete: if false;

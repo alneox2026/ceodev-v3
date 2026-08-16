@@ -38,7 +38,12 @@ def get_settings() -> WorkerSettings:
     return WorkerSettings(
         project_id=os.getenv("GOOGLE_CLOUD_PROJECT", "ceo-dev123").strip() or "ceo-dev123",
         threads_collection=os.getenv("FIRESTORE_THREADS_COLLECTION", "agent_threads_v3").strip() or "agent_threads_v3",
-        messages_subcollection=os.getenv("FIRESTORE_MESSAGES_SUBCOLLECTION", "messages").strip() or "messages",
+        messages_subcollection=os.getenv(
+            "FIRESTORE_MESSAGES_SUBCOLLECTION",
+            "messages_v3",
+        ).strip()
+        or "messages_v3",
+
         idempotency_collection=os.getenv("FIRESTORE_IDEMPOTENCY_COLLECTION", "processed_events_v3").strip()
         or "processed_events_v3",
         billing_ledger_collection=os.getenv(

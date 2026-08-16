@@ -156,8 +156,9 @@ variable "firestore_threads_collection" {
 variable "firestore_messages_subcollection" {
   description = "Subcollection name for messages under each thread document."
   type        = string
-  default     = "messages"
+  default     = "messages_v3"
 }
+
 
 variable "firestore_idempotency_collection" {
   description = "Top-level Firestore collection for processed event ids."
