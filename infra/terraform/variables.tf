@@ -231,15 +231,15 @@ variable "billing_api_stripe_secret_key_secret_version" {
 }
 
 variable "billing_api_stripe_webhook_signing_secret_id" {
-  description = "Optional existing Secret Manager secret ID for the Stripe webhook signing secret. Leave empty until the webhook endpoint exists."
+  description = "Secret Manager secret ID for the Stripe webhook signing secret."
   type        = string
-  default     = ""
+  default     = "stripe-webhook-signing-secret-v3"
 }
 
 variable "billing_api_stripe_webhook_signing_secret_version" {
   description = "Pinned numeric version of the Stripe webhook-signing Secret Manager secret when configured."
   type        = string
-  default     = ""
+  default     = "1"
 
   validation {
     condition = (
@@ -248,6 +248,7 @@ variable "billing_api_stripe_webhook_signing_secret_version" {
     error_message = "Set a positive numeric billing_api_stripe_webhook_signing_secret_version when configuring its secret ID."
   }
 }
+
 
 variable "billing_api_allowed_origins" {
   description = "Explicit browser origins allowed to call Firebase-authenticated Billing API endpoints."
