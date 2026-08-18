@@ -160,7 +160,14 @@ curl -s https://ceoagent-billing-api-v3-281577273798.us-central1.run.app/ready
 ### 6. Instance Scaling Constraints
 * **Rule**: Cloud Run services must have `min_instances = 0` and `max_instances = 20` to prevent quota exhaustion and unexpected idle compute costs.
 
+### 7. Seamless Top-Up Package Switching (No 409 Lockout)
+* **Rule**: Users must be able to freely switch between top-up amounts ($5, $10, $25) at any time.
+* **Behavior**:
+  - Clicking the *same* package reuses the existing active Checkout URL (idempotent reuse, avoiding duplicate sessions in Stripe).
+  - Clicking a *different* package generates a new Stripe Checkout session for the newly chosen package without throwing a `409 Conflict` error or locking the user out.
+
 ---
+
 
 ## 6. Troubleshooting Commands
 

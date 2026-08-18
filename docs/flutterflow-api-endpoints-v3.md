@@ -118,7 +118,11 @@ Authorization: Bearer [firebase_auth_token]
   }
   ```
 
+> [!NOTE]
+> **Seamless Package Switching**: Users can switch freely between `$5`, `$10`, and `$25` at any time. Clicking the same package re-opens the active checkout session, while choosing a different package generates a new checkout session for the newly chosen amount with zero lockouts.
+
 ---
+
 
 ### 2. Create $5/mo Monthly Platform Fee Checkout Session
 * **URL**: `POST https://ceoagent-billing-api-v3-281577273798.us-central1.run.app/v1/billing/service-fee/checkout-session`
