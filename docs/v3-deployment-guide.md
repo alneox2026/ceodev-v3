@@ -166,7 +166,25 @@ curl -s https://ceoagent-billing-api-v3-281577273798.us-central1.run.app/ready
   - Clicking the *same* package reuses the existing active Checkout URL (idempotent reuse, avoiding duplicate sessions in Stripe).
   - Clicking a *different* package generates a new Stripe Checkout session for the newly chosen package without throwing a `409 Conflict` error or locking the user out.
 
+### 8. Stripe Webhook Secret Manager, IAM Binding & Environment Variables
+* **Rule**: The Stripe webhook signing secret (`stripe-webhook-signing-secret-v3`) must have `roles/secretmanager.secretAccessor` granted to the Billing API service account (`ceoagent-billing-api-sa-v3@${PROJECT_ID}.iam.gserviceaccount.com`).
+* **Rule**: The Billing API Cloud Run service must mount `STRIPE_WEBHOOK_SIGNING_SECRET` from `stripe-webhook-signing-secret-v3` (version `1`) to verify incoming Stripe webhook signatures.
+* **Failure Symptom**: If this secret is missing or unmounted, the Billing API returns `503 Service Unavailable (stripe_webhook_not_configured)` on all Stripe webhook calls, preventing wallet credit settlements in Firestore.
+* **Setup Commands**:
+  ```bash
+  # 1. Create the secret with your whsec_... key
+  echo -n "whsec_..." | gcloud secrets create stripe-webhook-signing-secret-v3 \
+    --data-file=- --project=ceo-dev123
+
+  # 2. Grant IAM Secret Accessor role to Billing API service account
+  gcloud secrets add-iam-policy-binding stripe-webhook-signing-secret-v3 \
+    --member="serviceAccount:ceoagent-billing-api-sa-v3@ceo-dev123.iam.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project=ceo-dev123
+  ```
+
 ---
+
 
 
 ## 6. Troubleshooting Commands

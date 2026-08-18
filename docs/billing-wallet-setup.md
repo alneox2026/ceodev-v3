@@ -169,18 +169,15 @@ value in Terraform state. A newly created Secret Manager secret normally has
 version `1`; update `billing_api_stripe_secret_key_secret_version` whenever a
 key is rotated. Do not use `latest` for an environment-variable secret.
 
-Leave the webhook secret Terraform fields empty for now:
+Configure the webhook secret in Terraform and Secret Manager:
 
 ```hcl
-billing_api_stripe_webhook_signing_secret_id      = ""
-billing_api_stripe_webhook_signing_secret_version = ""
+billing_api_stripe_webhook_signing_secret_id      = "stripe-webhook-signing-secret-v3"
+billing_api_stripe_webhook_signing_secret_version = "1"
 ```
 
-After the webhook route is deployed and configured in Stripe, create its
-separate `whsec_...` Secret Manager secret, then set both values to the new
-secret ID and its pinned numeric version. The Checkout/webhook implementation
-will return `503` while this secret is intentionally absent; it will never
-accept an unsigned webhook as a fallback.
+After the webhook endpoint is created in Stripe Dashboard, store its `whsec_...` key in Secret Manager (`stripe-webhook-signing-secret-v3`) and grant `roles/secretmanager.secretAccessor` to `ceoagent-billing-api-sa-v3`. The Billing API service mounts this secret as `STRIPE_WEBHOOK_SIGNING_SECRET` to verify event signatures. If this secret is missing or unmounted, the webhook returns `503 Service Unavailable (stripe_webhook_not_configured)`.
+
 
 The initial test-mode scaling defaults are one vCPU, 512 MiB memory,
 concurrency 32, `max_instances = 20`, and `min_instances = 0`. This supports
