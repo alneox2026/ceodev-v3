@@ -12,9 +12,21 @@ REPOSITORY="${REPOSITORY:-ceosystem}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
-TAG="${TAG:-latest}"
-MAXIMA_CLOUDRUN_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-v3:${TAG}"
-MAXIMA_CLOUDRUN_STREAM_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-stream-v3:${TAG}"
+# Auto-detect latest built tags if not explicitly provided
+if [ -z "${TAG:-}" ] || [ "${TAG}" = "latest" ]; then
+  echo "--> Detecting newest agent image tags in Artifact Registry..."
+  MAXIMA_TAG="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-v3" --include-tags --sort-by=~CREATE_TIME --limit=1 --format='value(tags)' 2>/dev/null | tr ',' '\n' | grep -v '^latest$' | head -n 1 || true)"
+  MAXIMA_STREAM_TAG="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-stream-v3" --include-tags --sort-by=~CREATE_TIME --limit=1 --format='value(tags)' 2>/dev/null | tr ',' '\n' | grep -v '^latest$' | head -n 1 || true)"
+  MAXIMA_TAG="${MAXIMA_TAG:-latest}"
+  MAXIMA_STREAM_TAG="${MAXIMA_STREAM_TAG:-latest}"
+else
+  MAXIMA_TAG="${TAG}"
+  MAXIMA_STREAM_TAG="${TAG}"
+fi
+
+MAXIMA_CLOUDRUN_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-v3:${MAXIMA_TAG}"
+MAXIMA_CLOUDRUN_STREAM_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-stream-v3:${MAXIMA_STREAM_TAG}"
+
 
 # Dedicated V3 Agent Platform Session Resource IDs
 SESSION_RESOURCE_BUFFERED="projects/281577273798/locations/us-central1/reasoningEngines/7597266357385691136"
