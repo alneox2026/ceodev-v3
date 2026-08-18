@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from common.billing import customer_wallet_document_id, nonnegative_int
+from common.firestore import get_transaction_document_snapshot
 from services.agent_gateway_v3.app.core.config import get_settings
 from services.agent_gateway_v3.app.core.errors import ApiError
 from services.agent_gateway_v3.app.services.firestore_client import get_firestore_client
@@ -29,11 +30,10 @@ class WalletReservation:
 
     def event_metadata(self) -> dict[str, Any]:
         return {
-            "reservation_id": self.reservation_id,
+            "billing_reservation_id": self.reservation_id,
             "billing_subject_id": self.billing_subject_id,
             "reserved_amount_nanos": self.reserved_amount_nanos,
-            "currency": self.currency,
-            "reservation_expires_at": self.expires_at,
+            "billing_currency": self.currency,
         }
 
 
@@ -99,7 +99,7 @@ class WalletReservationService:
         ).document(turn_id)
 
         def operation(transaction: Any) -> WalletReservation:
-            reservation_snapshot = transaction.get(reservation_ref)
+            reservation_snapshot = get_transaction_document_snapshot(transaction, reservation_ref)
             if reservation_snapshot.exists:
                 return self._existing_reservation(
                     reservation_snapshot.to_dict() or {},
@@ -109,7 +109,7 @@ class WalletReservationService:
                     expected_agent_id=agent_id,
                 )
 
-            wallet_snapshot = transaction.get(wallet_ref)
+            wallet_snapshot = get_transaction_document_snapshot(transaction, wallet_ref)
             if not wallet_snapshot.exists:
                 raise ApiError(
                     402,

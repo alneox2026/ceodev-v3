@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from common.billing import customer_wallet_document_id, nonnegative_int
+from common.firestore import get_transaction_document_snapshot
 from common.schemas import TurnCompletedEvent
 from services.agent_persistence_worker_v3.app.core.config import get_settings
 from services.agent_persistence_worker_v3.app.core.errors import RetryableWorkerError
@@ -114,9 +115,9 @@ class BillingReconciliationService:
 
         def operation(transaction: Any) -> bool:
             # Keep all reads before writes for Firestore transaction validity.
-            current_reservation_snapshot = transaction.get(reservation_ref)
-            wallet_snapshot = transaction.get(wallet_ref)
-            transaction_snapshot = transaction.get(transaction_ref)
+            current_reservation_snapshot = get_transaction_document_snapshot(transaction, reservation_ref)
+            wallet_snapshot = get_transaction_document_snapshot(transaction, wallet_ref)
+            transaction_snapshot = get_transaction_document_snapshot(transaction, transaction_ref)
             if transaction_snapshot.exists or not current_reservation_snapshot.exists:
                 return False
             current_reservation = current_reservation_snapshot.to_dict() or {}

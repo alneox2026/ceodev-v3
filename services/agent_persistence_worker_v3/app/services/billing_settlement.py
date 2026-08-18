@@ -13,6 +13,7 @@ from common.billing import (
     customer_wallet_document_id,
     nonnegative_int,
 )
+from common.firestore import get_transaction_document_snapshot
 from common.schemas import TurnCompletedEvent
 from services.agent_persistence_worker_v3.app.core.config import get_settings
 from services.agent_persistence_worker_v3.app.core.errors import RetryableWorkerError
@@ -117,11 +118,11 @@ class BillingSettlementService:
 
         def operation(transaction: Any) -> BillingSettlementResult:
             # Firestore requires all reads to happen before writes in a transaction.
-            reservation_snapshot = transaction.get(reservation_ref)
-            ledger_snapshot = transaction.get(ledger_ref)
-            wallet_snapshot = transaction.get(wallet_ref)
-            transaction_snapshot = transaction.get(transaction_ref)
-            period_snapshot = transaction.get(period_ref)
+            reservation_snapshot = get_transaction_document_snapshot(transaction, reservation_ref)
+            ledger_snapshot = get_transaction_document_snapshot(transaction, ledger_ref)
+            wallet_snapshot = get_transaction_document_snapshot(transaction, wallet_ref)
+            transaction_snapshot = get_transaction_document_snapshot(transaction, transaction_ref)
+            period_snapshot = get_transaction_document_snapshot(transaction, period_ref)
 
             if transaction_snapshot.exists:
                 return self._result_from_existing_transaction(
