@@ -140,20 +140,18 @@ def test_first_topup_uses_one_mixed_subscription_checkout_and_reuses_it():
     assert params["subscription_data"]["metadata"]["checkout_kind"] == "initial_subscription_topup"
 
 
-def test_active_checkout_cannot_be_repurposed_for_a_different_package():
+def test_active_checkout_switches_package_smoothly():
     client = FakeFirestore()
     stripe = FakeStripeGateway()
     service = _service(client, stripe)
-    asyncio.run(service.create_topup_checkout(owner_uid="user-1", topup_package_id="credit_5_usd"))
+    result_5 = asyncio.run(service.create_topup_checkout(owner_uid="user-1", topup_package_id="credit_5_usd"))
+    assert result_5.topup_package_id == "credit_5_usd"
 
-    with pytest.raises(BillingApiError) as exc_info:
-        asyncio.run(
-            service.create_topup_checkout(owner_uid="user-1", topup_package_id="credit_25_usd")
-        )
+    result_25 = asyncio.run(service.create_topup_checkout(owner_uid="user-1", topup_package_id="credit_25_usd"))
+    assert result_25.topup_package_id == "credit_25_usd"
+    assert len(stripe.checkout_requests) == 2
+    assert stripe.checkout_requests[1][0]["line_items"][0]["price"] == "price_1U3ZLMB5Es3VU3maaNqqR0p9"
 
-    assert exc_info.value.status_code == 409
-    assert exc_info.value.code == "checkout_already_active"
-    assert len(stripe.checkout_requests) == 1
 
 
 def test_later_topup_is_payment_only_after_monthly_subscription_is_active():

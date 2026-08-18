@@ -208,33 +208,24 @@ class CheckoutService:
                     and isinstance(active_request_id, str)
                     and active_request_id
                 ):
-                    active_package_id = _required_string(
-                        account.get("active_checkout_topup_package_id"),
-                        "active_checkout_topup_package_id",
-                    )
-                    if active_package_id != package.package_id:
-                        raise BillingApiError(
-                            409,
-                            "checkout_already_active",
-                            "Another top-up Checkout session is already active. "
-                            "Complete, cancel, or wait for that session to expire before "
-                            "selecting a different package.",
+                    active_package_id = account.get("active_checkout_topup_package_id")
+                    if active_package_id == package.package_id and account.get("active_checkout_url"):
+                        return CheckoutReservation(
+                            billing_account_id=billing_account_id,
+                            billing_subject_id=billing_subject_id,
+                            owner_uid=owner_uid,
+                            stripe_customer_id=_optional_string(account.get("stripe_customer_id")),
+                            checkout_request_id=active_request_id,
+                            topup_package_id=active_package_id,
+                            starts_subscription=account.get("active_checkout_mode") == "subscription",
+                            expires_at=_as_utc(active_expiry),
+                            existing_checkout_session_id=_optional_string(
+                                account.get("active_checkout_session_id")
+                            ),
+                            existing_checkout_url=_optional_string(account.get("active_checkout_url")),
                         )
-                    return CheckoutReservation(
-                        billing_account_id=billing_account_id,
-                        billing_subject_id=billing_subject_id,
-                        owner_uid=owner_uid,
-                        stripe_customer_id=_optional_string(account.get("stripe_customer_id")),
-                        checkout_request_id=active_request_id,
-                        topup_package_id=active_package_id,
-                        starts_subscription=account.get("active_checkout_mode") == "subscription",
-                        expires_at=_as_utc(active_expiry),
-                        existing_checkout_session_id=_optional_string(
-                            account.get("active_checkout_session_id")
-                        ),
-                        existing_checkout_url=_optional_string(account.get("active_checkout_url")),
-                    )
                 starts_subscription = self._starts_subscription(account)
+
             else:
                 starts_subscription = True
 
