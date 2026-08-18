@@ -1,26 +1,10 @@
 agents:
-  maxima:
-    agent_id: maxima
-    backend: agent_runtime
-    resource_name: projects/ceo-dev123/locations/us-central1/reasoningEngines/6357932034928672768
-    region: us-central1
-    streaming_enabled: false
-    persistence_enabled: true
-    auth_policy: firebase
   maxima_v3:
     agent_id: maxima_v3
     backend: agent_runtime
     resource_name: projects/ceo-dev123/locations/us-central1/reasoningEngines/6357932034928672768
     region: us-central1
     streaming_enabled: false
-    persistence_enabled: true
-    auth_policy: firebase
-  maxima_agentruntime_streaming:
-    agent_id: maxima_agentruntime_streaming
-    backend: agent_runtime
-    resource_name: projects/ceo-dev123/locations/us-central1/reasoningEngines/1267738556093169664
-    region: us-central1
-    streaming_enabled: true
     persistence_enabled: true
     auth_policy: firebase
   maxima_agentruntime_streaming_v3:
@@ -31,16 +15,6 @@ agents:
     streaming_enabled: true
     persistence_enabled: true
     auth_policy: firebase
-  maxima_cloudrun:
-    agent_id: maxima_cloudrun
-    backend: cloud_run_adk
-    base_url: https://maxima-cloudrun-v3-281577273798.us-central1.run.app
-    app_name: app
-    region: us-central1
-    streaming_enabled: false
-    persistence_enabled: true
-    auth_policy: firebase
-    runtime_session_cleanup: cloud_run_adk
   maxima_cloudrun_v3:
     agent_id: maxima_cloudrun_v3
     backend: cloud_run_adk
@@ -48,16 +22,6 @@ agents:
     app_name: app
     region: us-central1
     streaming_enabled: false
-    persistence_enabled: true
-    auth_policy: firebase
-    runtime_session_cleanup: cloud_run_adk
-  maxima_cloudrun_stream:
-    agent_id: maxima_cloudrun_stream
-    backend: cloud_run_adk
-    base_url: https://maxima-cloudrun-stream-v3-281577273798.us-central1.run.app
-    app_name: app
-    region: us-central1
-    streaming_enabled: true
     persistence_enabled: true
     auth_policy: firebase
     runtime_session_cleanup: cloud_run_adk
@@ -71,4 +35,3 @@ agents:
     persistence_enabled: true
     auth_policy: firebase
     runtime_session_cleanup: cloud_run_adk
-

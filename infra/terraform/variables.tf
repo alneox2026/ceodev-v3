@@ -326,7 +326,7 @@ variable "billing_api_log_level" {
 variable "billing_enforcement_enabled" {
   description = "Whether the gateway must reserve prepaid credit before every agent request."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "billing_reservation_nanos" {

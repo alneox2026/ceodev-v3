@@ -14,23 +14,34 @@ def clear_registry_cache():
     load_registry.cache_clear()
 
 
-def test_get_agent_config_returns_maxima() -> None:
-    assert get_agent_config("maxima").agent_id == "maxima"
+def test_get_agent_config_returns_maxima_v3() -> None:
+    config = get_agent_config("maxima_v3")
+    assert config.agent_id == "maxima_v3"
+    assert config.backend == "agent_runtime"
+    assert "6357932034928672768" in config.resource_name
 
 
-def test_get_agent_config_returns_cloud_run_canary() -> None:
-    agent_config = get_agent_config("maxima_cloudrun")
+def test_get_agent_config_returns_maxima_agentruntime_streaming_v3() -> None:
+    config = get_agent_config("maxima_agentruntime_streaming_v3")
+    assert config.agent_id == "maxima_agentruntime_streaming_v3"
+    assert config.backend == "agent_runtime"
+    assert config.streaming_enabled is True
+    assert "1267738556093169664" in config.resource_name
 
-    assert agent_config.agent_id == "maxima_cloudrun"
+
+def test_get_agent_config_returns_cloud_run_v3() -> None:
+    agent_config = get_agent_config("maxima_cloudrun_v3")
+
+    assert agent_config.agent_id == "maxima_cloudrun_v3"
     assert agent_config.backend == "cloud_run_adk"
     assert agent_config.app_name == "app"
     assert agent_config.runtime_session_cleanup == "cloud_run_adk"
 
 
-def test_get_agent_config_returns_cloud_run_stream_canary() -> None:
-    agent_config = get_agent_config("maxima_cloudrun_stream")
+def test_get_agent_config_returns_cloud_run_stream_v3() -> None:
+    agent_config = get_agent_config("maxima_cloudrun_stream_v3")
 
-    assert agent_config.agent_id == "maxima_cloudrun_stream"
+    assert agent_config.agent_id == "maxima_cloudrun_stream_v3"
     assert agent_config.backend == "cloud_run_adk"
     assert agent_config.app_name == "app"
     assert agent_config.streaming_enabled is True
@@ -48,8 +59,8 @@ def test_get_agent_config_applies_runtime_env_override(tmp_path, monkeypatch) ->
     registry_path.write_text(
         """
 agents:
-  maxima:
-    agent_id: maxima
+  maxima_v3:
+    agent_id: maxima_v3
     resource_name: projects/test/locations/us-east1/reasoningEngines/old
     region: us-east1
     streaming_enabled: false
@@ -61,12 +72,12 @@ agents:
 
     monkeypatch.setenv("AGENT_REGISTRY_PATH", str(registry_path))
     monkeypatch.setenv(
-        "AGENT_MAXIMA_RESOURCE_NAME",
+        "AGENT_MAXIMA_V3_RESOURCE_NAME",
         "projects/test/locations/us-central1/reasoningEngines/new",
     )
-    monkeypatch.setenv("AGENT_MAXIMA_REGION", "us-central1")
+    monkeypatch.setenv("AGENT_MAXIMA_V3_REGION", "us-central1")
 
-    agent_config = get_agent_config("maxima")
+    agent_config = get_agent_config("maxima_v3")
 
     assert agent_config.resource_name == (
         "projects/test/locations/us-central1/reasoningEngines/new"
@@ -79,8 +90,8 @@ def test_get_agent_config_applies_cloud_run_env_overrides(tmp_path, monkeypatch)
     registry_path.write_text(
         """
 agents:
-  maxima_cloudrun:
-    agent_id: maxima_cloudrun
+  maxima_cloudrun_v3:
+    agent_id: maxima_cloudrun_v3
     backend: cloud_run_adk
     base_url: https://old.example.run.app
     app_name: old_app
@@ -95,14 +106,14 @@ agents:
 
     monkeypatch.setenv("AGENT_REGISTRY_PATH", str(registry_path))
     monkeypatch.setenv(
-        "AGENT_MAXIMA_CLOUDRUN_BASE_URL",
+        "AGENT_MAXIMA_CLOUDRUN_V3_BASE_URL",
         "https://maxima-cloudrun-canary.example.run.app",
     )
-    monkeypatch.setenv("AGENT_MAXIMA_CLOUDRUN_APP_NAME", "maxima_cloudrun")
-    monkeypatch.setenv("AGENT_MAXIMA_CLOUDRUN_AUDIENCE", "https://audience.example")
-    monkeypatch.setenv("AGENT_MAXIMA_CLOUDRUN_REGION", "us-central1")
+    monkeypatch.setenv("AGENT_MAXIMA_CLOUDRUN_V3_APP_NAME", "maxima_cloudrun")
+    monkeypatch.setenv("AGENT_MAXIMA_CLOUDRUN_V3_AUDIENCE", "https://audience.example")
+    monkeypatch.setenv("AGENT_MAXIMA_CLOUDRUN_V3_REGION", "us-central1")
 
-    agent_config = get_agent_config("maxima_cloudrun")
+    agent_config = get_agent_config("maxima_cloudrun_v3")
 
     assert agent_config.base_url == "https://maxima-cloudrun-canary.example.run.app"
     assert agent_config.app_name == "maxima_cloudrun"

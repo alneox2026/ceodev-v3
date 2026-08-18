@@ -69,8 +69,22 @@ gcloud run deploy maxima-cloudrun-stream-v3 \
   --port=8080 \
   --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},PROJECT_ID=${PROJECT_ID},MAXIMA_MODEL=gemini-2.5-flash,AGENT_VERSION=0.1.0,APP_URL=https://maxima-cloudrun-stream-v3-281577273798.us-central1.run.app,AGENT_ENGINE_RESOURCE_NAME=${SESSION_RESOURCE_STREAMING},AGENT_ENGINE_SESSION_NAME=maxima-cloudrun-stream-v3-sessions"
 
+echo "--> Granting Cloud Run Invoker role to Gateway Service Account..."
+gcloud run services add-iam-policy-binding maxima-cloudrun-v3 \
+  --member="serviceAccount:ceoagent-gateway-sa-v3@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/run.invoker" \
+  --region="${REGION}" \
+  --project="${PROJECT_ID}" >/dev/null
+
+gcloud run services add-iam-policy-binding maxima-cloudrun-stream-v3 \
+  --member="serviceAccount:ceoagent-gateway-sa-v3@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/run.invoker" \
+  --region="${REGION}" \
+  --project="${PROJECT_ID}" >/dev/null
+
 echo "================================================================="
 echo " Cloud Run ADK Agents Deployed Successfully!"
 echo " Maxima CloudRun URL        : $(gcloud run services describe maxima-cloudrun-v3 --region "${REGION}" --project "${PROJECT_ID}" --format='value(status.url)')"
 echo " Maxima Stream CloudRun URL : $(gcloud run services describe maxima-cloudrun-stream-v3 --region "${REGION}" --project "${PROJECT_ID}" --format='value(status.url)')"
 echo "================================================================="
+

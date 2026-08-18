@@ -26,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 
 DEFAULT_PROJECT_ID = "ceo-dev123"
 DEFAULT_REGION = "us-central1"
-DEFAULT_REASONING_ENGINE_ID = "5776927001067651072"
+DEFAULT_REASONING_ENGINE_ID = "6357932034928672768"
 RESOURCE_NAME_PATTERN = re.compile(
     r"^projects/(?P<project_id>[^/]+)/locations/(?P<region>[^/]+)/reasoningEngines/(?P<engine_id>[^/]+)$"
 )
