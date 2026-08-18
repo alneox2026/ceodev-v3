@@ -73,15 +73,16 @@ locals {
   billing_api_secret_env = merge(
     {
       STRIPE_SECRET_KEY = {
-        secret  = "projects/${var.project_id}/secrets/${var.billing_api_stripe_secret_key_secret_id}"
+        secret  = var.billing_api_stripe_secret_key_secret_id
         version = var.billing_api_stripe_secret_key_secret_version
       }
     },
     var.billing_api_stripe_webhook_signing_secret_id == "" ? {} : {
       STRIPE_WEBHOOK_SIGNING_SECRET = {
-        secret  = "projects/${var.project_id}/secrets/${var.billing_api_stripe_webhook_signing_secret_id}"
+        secret  = var.billing_api_stripe_webhook_signing_secret_id
         version = var.billing_api_stripe_webhook_signing_secret_version
       }
     },
   )
 }
+
