@@ -221,7 +221,13 @@ curl -s https://ceoagent-billing-api-v3-281577273798.us-central1.run.app/ready
   - **Before Turn**: Gateway checks `customer_wallets_v3` balance and places a temporary $0.50 hold in `billing_reservations_v3`.
   - **After Turn**: Persistence Worker settles the exact fractional Gemini token cost, creates an immutable audit record in `agent_billing_ledger_v3`, deducts `available_credit_nanos`, and releases the reservation.
 
+### 12. Firestore Transaction Document Snapshot Resolution
+* **Rule**: In Python `google-cloud-firestore`, `transaction.get(document_ref)` returns a generator/iterator rather than a direct DocumentSnapshot.
+* **Failure Symptom**: Calling `transaction.get(doc_ref).exists` throws `AttributeError: 'generator' object has no attribute 'exists'` and causes 500 errors during turn reservations and billing settlement.
+* **Requirement**: Always use `get_transaction_document_snapshot(transaction, document_ref)` from `common.firestore` across Gateway and Persistence Worker.
+
 ---
+
 
 
 
