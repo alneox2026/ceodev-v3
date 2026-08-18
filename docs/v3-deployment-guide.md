@@ -189,7 +189,40 @@ curl -s https://ceoagent-billing-api-v3-281577273798.us-central1.run.app/ready
     --project=ceo-dev123
   ```
 
+### 9. Strict V3 Agent Registry Isolation
+* **Rule**: In `config/agents.prod.yaml` and `config/agents.dev.yaml`, **ONLY** the 4 dedicated `_v3` agents must be registered. Never include legacy aliases (`maxima`, `maxima_cloudrun`, etc.) to prevent sessions from routing to old pre-v3 Reasoning Engines.
+* **V3 Reasoning Engine IDs**:
+  - `maxima_v3`: `projects/ceo-dev123/locations/us-central1/reasoningEngines/6357932034928672768`
+  - `maxima_agentruntime_streaming_v3`: `projects/ceo-dev123/locations/us-central1/reasoningEngines/1267738556093169664`
+* **V3 Cloud Run Agents**:
+  - `maxima_cloudrun_v3`: `https://maxima-cloudrun-v3-281577273798.us-central1.run.app` (Session backend: `7597266357385691136`)
+  - `maxima_cloudrun_stream_v3`: `https://maxima-cloudrun-stream-v3-281577273798.us-central1.run.app` (Session backend: `5253987176269479936`)
+
+### 10. Cloud Run ADK Invoker IAM Binding (Preventing 403 Forbidden)
+* **Rule**: When Cloud Run ADK agents (`maxima-cloudrun-v3` and `maxima-cloudrun-stream-v3`) are deployed with `--no-allow-unauthenticated`, Google Cloud Run ingress requires the caller to have the Invoker role.
+* **IAM Binding**: `ceoagent-gateway-sa-v3@ceo-dev123.iam.gserviceaccount.com` **MUST** have `roles/run.invoker` granted on both agent services.
+* **Failure Symptom**: If this IAM binding is missing, the Gateway receives `403 Forbidden` from Cloud Run and returns `502 Bad Gateway` to the client.
+* **Setup Command**:
+  ```bash
+  gcloud run services add-iam-policy-binding maxima-cloudrun-v3 \
+    --member="serviceAccount:ceoagent-gateway-sa-v3@ceo-dev123.iam.gserviceaccount.com" \
+    --role="roles/run.invoker" \
+    --region=us-central1 --project=ceo-dev123
+
+  gcloud run services add-iam-policy-binding maxima-cloudrun-stream-v3 \
+    --member="serviceAccount:ceoagent-gateway-sa-v3@ceo-dev123.iam.gserviceaccount.com" \
+    --role="roles/run.invoker" \
+    --region=us-central1 --project=ceo-dev123
+  ```
+
+### 11. Automated Token Billing Enforcement
+* **Rule**: Once top-up billing is verified and funded, `billing_enforcement_enabled` must be set to `true` in `infra/terraform/variables.tf` and `scripts/cloudshell_deploy_middleware_v3.sh`.
+* **Behavior**:
+  - **Before Turn**: Gateway checks `customer_wallets_v3` balance and places a temporary $0.50 hold in `billing_reservations_v3`.
+  - **After Turn**: Persistence Worker settles the exact fractional Gemini token cost, creates an immutable audit record in `agent_billing_ledger_v3`, deducts `available_credit_nanos`, and releases the reservation.
+
 ---
+
 
 
 

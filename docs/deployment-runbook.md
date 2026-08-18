@@ -157,9 +157,9 @@ Confirm all of the following:
 4. Pub/Sub topic receives events
 5. worker logs show `worker_event_persisted`
 6. Firestore receives:
-   - `agent_threads/{thread_id}`
-   - `agent_threads/{thread_id}/messages/{turn_id}_user`
-   - `agent_threads/{thread_id}/messages/{turn_id}_assistant`
+   - `agent_threads_v3/{thread_id}`
+   - `agent_threads_v3/{thread_id}/messages_v3/{turn_id}_user`
+   - `agent_threads_v3/{thread_id}/messages_v3/{turn_id}_assistant`
 7. archive action returns `status = "archived"`
 8. delete action returns `status = "deleted"` and worker logs show `worker_thread_delete_processed`
 9. Cloud Run Error Reporting remains empty for both services during the verification window
