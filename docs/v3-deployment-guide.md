@@ -226,6 +226,21 @@ curl -s https://ceoagent-billing-api-v3-281577273798.us-central1.run.app/ready
 * **Failure Symptom**: Calling `transaction.get(doc_ref).exists` throws `AttributeError: 'generator' object has no attribute 'exists'` and causes 500 errors during turn reservations and billing settlement.
 * **Requirement**: Always use `get_transaction_document_snapshot(transaction, document_ref)` from `common.firestore` across Gateway and Persistence Worker.
 
+### 13. Stripe Webhook Graceful Event Acknowledgment (Preventing 400 Delivery Failures)
+* **Rule**: All incoming Stripe webhook events with valid cryptographic signatures MUST return `HTTP 200 OK`, even if they represent:
+  - Initial combined subscription checkout invoices (`invoice.paid` for `subscription_create` which were already credited via `checkout.session.completed`).
+  - Historical/legacy test events or test subscriptions missing account metadata.
+  - Events originating from non-matching catalog environments.
+* **Failure Symptom**: Returning `HTTP 400 Bad Request` on unexpected or already-fulfilled invoice/subscription events causes Stripe to consider delivery failed, retry up to 47 times over 3 days, and trigger automated warning emails.
+* **Requirement**: Wrap invoice and subscription event handlers in `webhook_service.py` to record an ignored event receipt (`outcome="ignored"`) and return `200 OK` rather than rejecting with `400`.
+
+### 14. Dedicated Agent Platform Sessions Backends for Cloud Run ADK Agents
+* **Rule**: Cloud Run ADK agents (`maxima-cloudrun-v3` and `maxima-cloudrun-stream-v3`) must have their dedicated Agent Platform Reasoning Engine session backends provisioned and referenced via `AGENT_ENGINE_RESOURCE_NAME`.
+* **Resource Mappings**:
+  - `maxima-cloudrun-v3`: `projects/281577273798/locations/us-central1/reasoningEngines/7597266357385691136`
+  - `maxima-cloudrun-stream-v3`: `projects/281577273798/locations/us-central1/reasoningEngines/5253987176269479936`
+* **Behavior**: Guarantees durable session storage in Vertex AI Agent Platform without relying on volatile in-memory container state.
+
 ---
 
 

@@ -246,6 +246,18 @@ match /processed_events_v3/{eventId} {
 }
 ```
 
+## Stripe Webhook Event Ingestion & Resilience
+
+The Billing API exposes a cryptographically-verified Stripe webhook endpoint at:
+`POST /v1/billing/stripe/webhook`
+
+### Event Ingestion Lifecycle:
+1. **Signature Verification**: Verified against the Secret Manager secret `stripe-webhook-signing-secret-v3`.
+2. **Idempotency & Audit**: Document receipts are recorded in `stripe_webhook_events_v3/{opaque_event_id}`.
+3. **Graceful Acknowledgment**:
+   - `checkout.session.completed`: Credits `customer_wallets_v3` atomically and writes `wallet_transactions_v3`.
+   - `invoice.paid`: Fulfills recurring monthly service fee payments. Initial combined checkout invoices (already credited by checkout session) are acknowledged with `200 OK` (outcome `ignored`).
+   - `customer.subscription.*`: Updates subscription state. Unmatched or test events without metadata return `200 OK` (outcome `ignored`) to prevent Stripe delivery retries.
 
 ## Development-only wallet provisioning
 
