@@ -461,6 +461,16 @@ class StripeWebhookService:
             invoice = self._stripe_gateway.retrieve_invoice(invoice_id)
         except StripeGatewayError as exc:
             raise BillingApiError(502, "stripe_invoice_retrieval_failed", "Stripe invoice verification is temporarily unavailable.") from exc
+        billing_reason = invoice.get("billing_reason")
+        if billing_reason == "subscription_create":
+            # Initial subscription creation invoices are fulfilled via checkout.session.completed
+            return self._record_ignored_event(
+                stripe_event_id=stripe_event_id,
+                stripe_event_type=stripe_event_type,
+                stripe_event_created_at=stripe_event_created_at,
+                stripe_livemode=stripe_livemode,
+                payload_sha256=payload_sha256,
+            )
         subscription_id = _optional_stripe_object_id(invoice.get("subscription"))
         if not subscription_id:
             return self._record_ignored_event(
