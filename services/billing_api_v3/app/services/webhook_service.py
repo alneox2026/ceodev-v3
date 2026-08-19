@@ -461,21 +461,41 @@ class StripeWebhookService:
             invoice = self._stripe_gateway.retrieve_invoice(invoice_id)
         except StripeGatewayError as exc:
             raise BillingApiError(502, "stripe_invoice_retrieval_failed", "Stripe invoice verification is temporarily unavailable.") from exc
-        subscription_id = _stripe_object_id(invoice.get("subscription"), "Stripe subscription id")
+        subscription_id = _optional_stripe_object_id(invoice.get("subscription"))
+        if not subscription_id:
+            return self._record_ignored_event(
+                stripe_event_id=stripe_event_id,
+                stripe_event_type=stripe_event_type,
+                stripe_event_created_at=stripe_event_created_at,
+                stripe_livemode=stripe_livemode,
+                payload_sha256=payload_sha256,
+            )
         try:
             subscription = self._stripe_gateway.retrieve_subscription(subscription_id)
         except StripeGatewayError as exc:
             raise BillingApiError(502, "stripe_subscription_retrieval_failed", "Stripe subscription verification is temporarily unavailable.") from exc
-        fulfillment = self._validate_service_fee_invoice(
-            invoice=invoice,
-            subscription=subscription,
-            stripe_event_id=stripe_event_id,
-            stripe_event_type=stripe_event_type,
-            stripe_event_created_at=stripe_event_created_at,
-            stripe_livemode=stripe_livemode,
-            payload_sha256=payload_sha256,
-        )
-        return self._settle_service_fee(fulfillment)
+        try:
+            fulfillment = self._validate_service_fee_invoice(
+                invoice=invoice,
+                subscription=subscription,
+                stripe_event_id=stripe_event_id,
+                stripe_event_type=stripe_event_type,
+                stripe_event_created_at=stripe_event_created_at,
+                stripe_livemode=stripe_livemode,
+                payload_sha256=payload_sha256,
+            )
+            return self._settle_service_fee(fulfillment)
+        except BillingApiError as exc:
+            if exc.status_code == 400:
+                # Initial checkout invoices or legacy test invoices are acknowledged cleanly without failing delivery
+                return self._record_ignored_event(
+                    stripe_event_id=stripe_event_id,
+                    stripe_event_type=stripe_event_type,
+                    stripe_event_created_at=stripe_event_created_at,
+                    stripe_livemode=stripe_livemode,
+                    payload_sha256=payload_sha256,
+                )
+            raise
 
     def _validate_service_fee_invoice(
         self,
@@ -646,17 +666,37 @@ class StripeWebhookService:
         payload_sha256: str,
     ) -> WebhookResult:
         invoice = _event_object(event)
-        subscription_id = _stripe_object_id(invoice.get("subscription"), "Stripe subscription id")
+        subscription_id = _optional_stripe_object_id(invoice.get("subscription"))
+        if not subscription_id:
+            return self._record_ignored_event(
+                stripe_event_id=stripe_event_id,
+                stripe_event_type=stripe_event_type,
+                stripe_event_created_at=stripe_event_created_at,
+                stripe_livemode=stripe_livemode,
+                payload_sha256=payload_sha256,
+            )
         try:
             subscription = self._stripe_gateway.retrieve_subscription(subscription_id)
         except StripeGatewayError as exc:
             raise BillingApiError(502, "stripe_subscription_retrieval_failed", "Stripe subscription verification is temporarily unavailable.") from exc
         if subscription.get("livemode") is not stripe_livemode:
-            raise BillingApiError(400, "stripe_event_invalid", "Stripe event details are inconsistent.")
+            return self._record_ignored_event(
+                stripe_event_id=stripe_event_id,
+                stripe_event_type=stripe_event_type,
+                stripe_event_created_at=stripe_event_created_at,
+                stripe_livemode=stripe_livemode,
+                payload_sha256=payload_sha256,
+            )
         metadata = _mapping(subscription.get("metadata"), "Stripe Subscription metadata")
-        billing_account_id = _required_id(metadata.get("billing_account_id"), "billing_account_id")
-        if metadata.get("catalog_environment") != self._catalog.environment:
-            raise BillingApiError(400, "stripe_environment_mismatch", "Stripe event is for another environment.")
+        billing_account_id = _optional_id(metadata.get("billing_account_id"))
+        if not billing_account_id or metadata.get("catalog_environment") != self._catalog.environment:
+            return self._record_ignored_event(
+                stripe_event_id=stripe_event_id,
+                stripe_event_type=stripe_event_type,
+                stripe_event_created_at=stripe_event_created_at,
+                stripe_livemode=stripe_livemode,
+                payload_sha256=payload_sha256,
+            )
         return self._record_subscription_state(
             stripe_event_id=stripe_event_id,
             stripe_event_type=stripe_event_type,
@@ -684,7 +724,15 @@ class StripeWebhookService:
         payload_sha256: str,
     ) -> WebhookResult:
         event_subscription = _event_object(event)
-        subscription_id = _required_id(event_subscription.get("id"), "Stripe subscription id")
+        subscription_id = _optional_id(event_subscription.get("id"))
+        if not subscription_id:
+            return self._record_ignored_event(
+                stripe_event_id=stripe_event_id,
+                stripe_event_type=stripe_event_type,
+                stripe_event_created_at=stripe_event_created_at,
+                stripe_livemode=stripe_livemode,
+                payload_sha256=payload_sha256,
+            )
         try:
             subscription = self._stripe_gateway.retrieve_subscription(subscription_id)
         except StripeGatewayError as exc:
@@ -694,11 +742,23 @@ class StripeWebhookService:
                 "Stripe subscription verification is temporarily unavailable.",
             ) from exc
         if subscription.get("livemode") is not stripe_livemode:
-            raise BillingApiError(400, "stripe_event_invalid", "Stripe event details are inconsistent.")
+            return self._record_ignored_event(
+                stripe_event_id=stripe_event_id,
+                stripe_event_type=stripe_event_type,
+                stripe_event_created_at=stripe_event_created_at,
+                stripe_livemode=stripe_livemode,
+                payload_sha256=payload_sha256,
+            )
         metadata = _mapping(subscription.get("metadata"), "Stripe Subscription metadata")
-        billing_account_id = _required_id(metadata.get("billing_account_id"), "billing_account_id")
-        if metadata.get("catalog_environment") != self._catalog.environment:
-            raise BillingApiError(400, "stripe_environment_mismatch", "Stripe event is for another environment.")
+        billing_account_id = _optional_id(metadata.get("billing_account_id"))
+        if not billing_account_id or metadata.get("catalog_environment") != self._catalog.environment:
+            return self._record_ignored_event(
+                stripe_event_id=stripe_event_id,
+                stripe_event_type=stripe_event_type,
+                stripe_event_created_at=stripe_event_created_at,
+                stripe_livemode=stripe_livemode,
+                payload_sha256=payload_sha256,
+            )
         return self._record_subscription_state(
             stripe_event_id=stripe_event_id,
             stripe_event_type=stripe_event_type,
