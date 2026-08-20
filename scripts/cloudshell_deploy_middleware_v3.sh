@@ -18,10 +18,14 @@ if [ -n "${TAG:-}" ] && [ "${TAG}" != "latest" ]; then
   WORKER_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-persistence-worker-v3:${TAG}"
   BILLING_API_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-billing-api-v3:${TAG}"
 else
-  echo "--> Detecting newest middleware image digests in Artifact Registry..."
-  GATEWAY_DIGEST="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3" --sort-by=~CREATE_TIME --limit=1 --format='value(version)' 2>/dev/null || true)"
-  WORKER_DIGEST="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-persistence-worker-v3" --sort-by=~CREATE_TIME --limit=1 --format='value(version)' 2>/dev/null || true)"
-  BILLING_API_DIGEST="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-billing-api-v3" --sort-by=~CREATE_TIME --limit=1 --format='value(version)' 2>/dev/null || true)"
+  # Resolve the immutable sha256 digest behind the :latest tag.
+  # Using 'describe :latest' ensures we get the actual runnable container
+  # image, not intermediate build cache layers (which are also stored in
+  # Artifact Registry and would appear newest by CREATE_TIME).
+  echo "--> Resolving :latest image digests from Artifact Registry..."
+  GATEWAY_DIGEST="$(gcloud artifacts docker images describe "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3:latest" --format='value(image_summary.digest)' 2>/dev/null || true)"
+  WORKER_DIGEST="$(gcloud artifacts docker images describe "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-persistence-worker-v3:latest" --format='value(image_summary.digest)' 2>/dev/null || true)"
+  BILLING_API_DIGEST="$(gcloud artifacts docker images describe "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-billing-api-v3:latest" --format='value(image_summary.digest)' 2>/dev/null || true)"
 
   if [ -n "${GATEWAY_DIGEST}" ]; then
     GATEWAY_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3@${GATEWAY_DIGEST}"

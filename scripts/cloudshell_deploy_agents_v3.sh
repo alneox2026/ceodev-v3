@@ -17,9 +17,12 @@ if [ -n "${TAG:-}" ] && [ "${TAG}" != "latest" ]; then
   MAXIMA_CLOUDRUN_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-v3:${TAG}"
   MAXIMA_CLOUDRUN_STREAM_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-stream-v3:${TAG}"
 else
-  echo "--> Detecting newest agent image digests in Artifact Registry..."
-  MAXIMA_DIGEST="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-v3" --sort-by=~CREATE_TIME --limit=1 --format='value(version)' 2>/dev/null || true)"
-  MAXIMA_STREAM_DIGEST="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-stream-v3" --sort-by=~CREATE_TIME --limit=1 --format='value(version)' 2>/dev/null || true)"
+  # Resolve the immutable sha256 digest behind the :latest tag.
+  # Using 'describe :latest' ensures we get the actual runnable container
+  # image, not intermediate build cache layers.
+  echo "--> Resolving :latest agent image digests from Artifact Registry..."
+  MAXIMA_DIGEST="$(gcloud artifacts docker images describe "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-v3:latest" --format='value(image_summary.digest)' 2>/dev/null || true)"
+  MAXIMA_STREAM_DIGEST="$(gcloud artifacts docker images describe "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-stream-v3:latest" --format='value(image_summary.digest)' 2>/dev/null || true)"
 
   if [ -n "${MAXIMA_DIGEST}" ]; then
     MAXIMA_CLOUDRUN_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/maxima-cloudrun-v3@${MAXIMA_DIGEST}"
