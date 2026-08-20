@@ -273,3 +273,61 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
   --project=ceo-dev123 \
   --format="value(textPayload,jsonPayload.message)"
 ```
+
+---
+
+## 7. Resolved Issues & Deployment Rules
+
+### Rule 15 — Billing event-metadata key-name contract
+
+The Gateway's `WalletReservation.event_metadata()` must emit the key
+`reservation_id` (not `billing_reservation_id`).  The Persistence Worker's
+`billing_settlement.py` and `billing_ledger.py` both read
+`billing_metadata.get("reservation_id")` when extracting the reservation
+identity from the Pub/Sub event.
+
+**Symptom**: `settled_usage_nanos` stays at `0`, `reserved_credit_nanos`
+accumulates indefinitely, and Cloud Run logs for the persistence worker show
+`"Billing metadata field reservation_id is required."` errors.
+
+**Fix** (commit `dbb2413`): Renamed the key in
+`services/agent_gateway_v3/app/services/wallet_reservations.py` line 33 from
+`billing_reservation_id` to `reservation_id`.
+
+**After fixing**: Both the Gateway **and** the Persistence Worker container
+images must be rebuilt and redeployed, because:
+- The Gateway image contains the code that emits the metadata key.
+- The Worker image contains the code that reads the metadata key and runs
+  the settlement transaction.
+
+### Rule 16 — Always rebuild ALL affected images after code changes
+
+When Python source in `common/`, `services/agent_gateway_v3/`, or
+`services/agent_persistence_worker_v3/` is modified, you must:
+
+1. Rebuild affected container images via Cloud Build or `cloudshell_build_images_v3.sh`.
+2. Redeploy the affected Cloud Run services via Terraform or `cloudshell_deploy_middleware_v3.sh`.
+
+The Terraform deploy script uses the `:latest` tag from Artifact Registry.
+If you only run the deploy without rebuilding first, the old image is reused
+and your code changes will **not** take effect.
+
+**Quick single-service rebuild + deploy** (example for the persistence worker):
+```bash
+# Step 1: Build
+gcloud builds submit . \
+  --config=<(cat <<EOF
+steps:
+- name: gcr.io/cloud-builders/docker
+  args: ["build", "-f", "services/agent_persistence_worker_v3/Dockerfile",
+         "-t", "us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker-v3:latest", "."]
+images:
+- "us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker-v3:latest"
+EOF
+) --project=ceo-dev123
+
+# Step 2: Deploy
+gcloud run deploy ceoagent-persistence-worker-v3 \
+  --image=us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker-v3:latest \
+  --region=us-central1 --project=ceo-dev123
+```
