@@ -331,3 +331,58 @@ gcloud run deploy ceoagent-persistence-worker-v3 \
   --image=us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker-v3:latest \
   --region=us-central1 --project=ceo-dev123
 ```
+
+### Rule 17 — Pub/Sub zombie messages after breaking schema changes
+
+When a Pub/Sub-triggered Cloud Run worker returns HTTP 500, Pub/Sub retries
+the message with exponential backoff for up to 7 days. If a schema-breaking
+change was deployed (e.g., renaming a metadata key), old messages already in
+the Pub/Sub queue still carry the old schema and will keep failing on every
+retry — generating thousands of log entries.
+
+**How to prevent this**: When renaming or removing a field that the consumer
+reads from a Pub/Sub message, always add backward-compatible fallback logic
+in the consumer *before* changing the producer. For example:
+
+```python
+# Accept both old and new key names
+reservation_id = (
+    billing_metadata.get("reservation_id")          # new name
+    or billing_metadata.get("billing_reservation_id")  # old name
+)
+```
+
+**How to diagnose**: If `worker_event_persist_retryable_failure` errors
+repeat for the same 2–3 `event_id` values every few minutes, those are
+zombie Pub/Sub messages, not new events. Check the `reason` field — if it
+references a missing or mismatched field, the old messages carry stale
+schema.
+
+**How to fix (after deploying backward-compatible consumer)**:
+1. Deploy the worker with fallback logic so old messages process successfully.
+2. Pub/Sub will retry them, they'll return 200, and errors will stop.
+3. If messages have exceeded the Pub/Sub retention window (7 days), they are
+   automatically purged.
+
+### Rule 18 — Cross-service Pub/Sub metadata key contract
+
+The Gateway's `WalletReservation.event_metadata()` produces metadata keys
+that are consumed by the Persistence Worker's `billing_settlement.py` and
+`billing_ledger.py`. These keys form an implicit contract:
+
+| Producer key (Gateway) | Consumer reader (Worker) | Firestore field |
+| :--- | :--- | :--- |
+| `reservation_id` | `billing_metadata.get("reservation_id")` | `billing_reservation_id` |
+| `billing_subject_id` | `billing_metadata.get("billing_subject_id")` | `billing_subject_id` |
+| `reserved_amount_nanos` | `billing_metadata.get("reserved_amount_nanos")` | `billing_reservation_nanos` |
+
+**Critical**: The Pub/Sub metadata key name and the Firestore document field
+name are intentionally different. Never assume they are the same. When
+modifying either side, grep for both the metadata key and the Firestore field
+across `services/agent_gateway_v3/` and
+`services/agent_persistence_worker_v3/` to find all references.
+
+**Validation tolerance**: The settlement's `_validate_settlement_records`
+method tolerates `None` in the ledger's `billing_reservation_id` field to
+handle ledger documents written before the metadata key fix (commit
+`dbb2413`). This is intentional — do not add a strict `is not None` check.
