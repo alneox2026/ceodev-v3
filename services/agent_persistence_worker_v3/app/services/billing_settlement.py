@@ -75,7 +75,8 @@ class BillingSettlementService:
         billing_metadata: dict[str, Any],
     ) -> BillingSettlementResult:
         reservation_id = self._required_string(
-            billing_metadata.get("reservation_id"),
+            billing_metadata.get("reservation_id")
+            or billing_metadata.get("billing_reservation_id"),
             "reservation_id",
         )
         if reservation_id != event.turn_id:

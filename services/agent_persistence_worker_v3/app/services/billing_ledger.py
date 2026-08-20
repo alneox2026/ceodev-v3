@@ -50,6 +50,7 @@ class BillingLedgerRepository:
             or event.user_id,
             "billing_reservation_id": self._optional_string(
                 billing_metadata.get("reservation_id")
+                or billing_metadata.get("billing_reservation_id")
             ),
             "billing_reservation_nanos": self._nonnegative_int(
                 billing_metadata.get("reserved_amount_nanos")
