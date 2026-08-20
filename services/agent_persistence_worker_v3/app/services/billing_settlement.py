@@ -380,11 +380,15 @@ class BillingSettlementService:
             raise RetryableWorkerError(
                 f"Billing reservation {reservation_id} does not match completed turn {event.turn_id}."
             )
+        ledger_reservation_id = ledger.get("billing_reservation_id")
         if (
             ledger.get("turn_id") != event.turn_id
             or ledger.get("uid") != event.user_id
             or ledger.get("billing_subject_id") != billing_subject_id
-            or ledger.get("billing_reservation_id") != reservation_id
+            or (
+                ledger_reservation_id is not None
+                and ledger_reservation_id != reservation_id
+            )
         ):
             raise RetryableWorkerError(
                 f"Billing ledger for turn {event.turn_id} does not match its reservation."
