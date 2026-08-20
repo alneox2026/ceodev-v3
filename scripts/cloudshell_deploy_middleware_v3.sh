@@ -12,24 +12,35 @@ REPOSITORY="${REPOSITORY:-ceosystem}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
-# Auto-detect latest built tags per service if not explicitly provided
-if [ -z "${TAG:-}" ] || [ "${TAG}" = "latest" ]; then
-  echo "--> Detecting newest middleware image tags in Artifact Registry..."
-  GATEWAY_TAG="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3" --include-tags --sort-by=~CREATE_TIME --limit=1 --format='value(tags)' 2>/dev/null | tr ',' '\n' | grep -v '^latest$' | head -n 1 || true)"
-  WORKER_TAG="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-persistence-worker-v3" --include-tags --sort-by=~CREATE_TIME --limit=1 --format='value(tags)' 2>/dev/null | tr ',' '\n' | grep -v '^latest$' | head -n 1 || true)"
-  BILLING_API_TAG="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-billing-api-v3" --include-tags --sort-by=~CREATE_TIME --limit=1 --format='value(tags)' 2>/dev/null | tr ',' '\n' | grep -v '^latest$' | head -n 1 || true)"
-  GATEWAY_TAG="${GATEWAY_TAG:-latest}"
-  WORKER_TAG="${WORKER_TAG:-latest}"
-  BILLING_API_TAG="${BILLING_API_TAG:-latest}"
+# Auto-detect latest built digests or tags per service if not explicitly provided
+if [ -n "${TAG:-}" ] && [ "${TAG}" != "latest" ]; then
+  GATEWAY_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3:${TAG}"
+  WORKER_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-persistence-worker-v3:${TAG}"
+  BILLING_API_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-billing-api-v3:${TAG}"
 else
-  GATEWAY_TAG="${TAG}"
-  WORKER_TAG="${TAG}"
-  BILLING_API_TAG="${TAG}"
-fi
+  echo "--> Detecting newest middleware image digests in Artifact Registry..."
+  GATEWAY_DIGEST="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3" --sort-by=~CREATE_TIME --limit=1 --format='value(version)' 2>/dev/null || true)"
+  WORKER_DIGEST="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-persistence-worker-v3" --sort-by=~CREATE_TIME --limit=1 --format='value(version)' 2>/dev/null || true)"
+  BILLING_API_DIGEST="$(gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-billing-api-v3" --sort-by=~CREATE_TIME --limit=1 --format='value(version)' 2>/dev/null || true)"
 
-GATEWAY_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3:${GATEWAY_TAG}"
-WORKER_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-persistence-worker-v3:${WORKER_TAG}"
-BILLING_API_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-billing-api-v3:${BILLING_API_TAG}"
+  if [ -n "${GATEWAY_DIGEST}" ]; then
+    GATEWAY_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3@${GATEWAY_DIGEST}"
+  else
+    GATEWAY_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-gateway-v3:latest"
+  fi
+
+  if [ -n "${WORKER_DIGEST}" ]; then
+    WORKER_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-persistence-worker-v3@${WORKER_DIGEST}"
+  else
+    WORKER_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-persistence-worker-v3:latest"
+  fi
+
+  if [ -n "${BILLING_API_DIGEST}" ]; then
+    BILLING_API_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-billing-api-v3@${BILLING_API_DIGEST}"
+  else
+    BILLING_API_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ceoagent-billing-api-v3:latest"
+  fi
+fi
 
 
 echo "================================================================="

@@ -306,31 +306,37 @@ When Python source in `common/`, `services/agent_gateway_v3/`, or
 `services/agent_persistence_worker_v3/` is modified, you must:
 
 1. Rebuild affected container images via Cloud Build or `cloudshell_build_images_v3.sh`.
-2. Redeploy the affected Cloud Run services via Terraform or `cloudshell_deploy_middleware_v3.sh`.
+2. Redeploy the affected Cloud Run services via `cloudshell_deploy_middleware_v3.sh`.
 
-The Terraform deploy script uses the `:latest` tag from Artifact Registry.
-If you only run the deploy without rebuilding first, the old image is reused
-and your code changes will **not** take effect.
+The deploy scripts now resolve **immutable `@sha256:` digests** from
+Artifact Registry (not mutable `:latest` tags), so Terraform always detects
+a change and creates a new Cloud Run revision. See Rule 19 for why.
 
-**Quick single-service rebuild + deploy** (example for the persistence worker):
+### Rule 19 — Terraform skips deploys when using mutable `:latest` tags
+
+**Problem**: When Terraform's `google_cloud_run_v2_service` resource uses a
+mutable tag like `:latest`, Terraform compares the *string*
+`"...worker-v3:latest"` in state vs plan. If the string is identical,
+Terraform sees "no change" and skips the update — even though `:latest` now
+points to a completely different image digest in Artifact Registry.
+
+**Symptom**: You run `cloudshell_build_images_v3.sh` followed by
+`cloudshell_deploy_middleware_v3.sh`, Cloud Shell says "Apply complete",
+but Cloud Run still serves the old revision with old code.
+
+**Fix** (applied to both `cloudshell_deploy_middleware_v3.sh` and
+`cloudshell_deploy_agents_v3.sh`): The deploy scripts now query Artifact
+Registry for the newest image's immutable `sha256:` digest and pass it to
+Terraform as `image@sha256:abc123...`. Since each build produces a unique
+digest, Terraform always detects a real change and creates a new revision.
+
+**Manual override**: If you need to force-deploy without the script:
 ```bash
-# Step 1: Build
-gcloud builds submit . \
-  --config=<(cat <<EOF
-steps:
-- name: gcr.io/cloud-builders/docker
-  args: ["build", "-f", "services/agent_persistence_worker_v3/Dockerfile",
-         "-t", "us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker-v3:latest", "."]
-images:
-- "us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker-v3:latest"
-EOF
-) --project=ceo-dev123
-
-# Step 2: Deploy
 gcloud run deploy ceoagent-persistence-worker-v3 \
   --image=us-central1-docker.pkg.dev/ceo-dev123/ceosystem/ceoagent-persistence-worker-v3:latest \
   --region=us-central1 --project=ceo-dev123
 ```
+`gcloud run deploy` always forces a fresh image pull, unlike Terraform.
 
 ### Rule 17 — Pub/Sub zombie messages after breaking schema changes
 
