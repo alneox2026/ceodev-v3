@@ -30,7 +30,7 @@ class WalletReservation:
 
     def event_metadata(self) -> dict[str, Any]:
         return {
-            "billing_reservation_id": self.reservation_id,
+            "reservation_id": self.reservation_id,
             "billing_subject_id": self.billing_subject_id,
             "reserved_amount_nanos": self.reserved_amount_nanos,
             "billing_currency": self.currency,
