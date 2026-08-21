@@ -330,9 +330,9 @@ variable "billing_enforcement_enabled" {
 }
 
 variable "billing_reservation_nanos" {
-  description = "Conservative per-turn USD prepaid-credit hold in nanos; 500000000 is USD 0.50."
+  description = "Conservative per-turn USD prepaid-credit hold in nanos; 50000000 is USD 0.05."
   type        = number
-  default     = 500000000
+  default     = 50000000
 }
 
 variable "billing_reservation_ttl_seconds" {

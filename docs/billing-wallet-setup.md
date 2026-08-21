@@ -59,7 +59,7 @@ an immutable test-credit transaction together.
 ### `billing_reservations_v3/{turn_id}`
 
 Created by the gateway before invoking an agent. It holds the configured
-maximum per-turn credit, currently `$0.50` (`500000000` nanos), for one hour.
+maximum per-turn credit, currently `$0.05` (`50000000` nanos), for one hour.
 The worker changes it to `settled`, `settled_shortfall`, `unpriced_released`, or
 `expired_released`.
 

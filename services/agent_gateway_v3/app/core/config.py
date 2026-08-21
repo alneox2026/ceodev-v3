@@ -96,7 +96,7 @@ def get_settings() -> GatewaySettings:
         ).strip()
         or "billing_reservations_v3",
         billing_reservation_nanos=int(
-            os.getenv("BILLING_RESERVATION_NANOS", "500000000")
+            os.getenv("BILLING_RESERVATION_NANOS", "50000000")
         ),
         billing_reservation_ttl_seconds=int(
             os.getenv("BILLING_RESERVATION_TTL_SECONDS", "3600")
