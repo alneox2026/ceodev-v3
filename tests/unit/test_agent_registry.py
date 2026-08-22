@@ -29,6 +29,15 @@ def test_get_agent_config_returns_maxima_agentruntime_streaming_v3() -> None:
     assert "1267738556093169664" in config.resource_name
 
 
+def test_get_agent_config_returns_maximus88() -> None:
+    config = get_agent_config("maximus88")
+    assert config.agent_id == "maximus88"
+    assert config.backend == "agent_runtime"
+    assert config.region == "us-west1"
+    assert config.streaming_enabled is True
+    assert "2960720930810101760" in config.resource_name
+
+
 def test_get_agent_config_returns_cloud_run_v3() -> None:
     agent_config = get_agent_config("maxima_cloudrun_v3")
 
