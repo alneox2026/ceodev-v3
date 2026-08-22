@@ -92,23 +92,53 @@ class AgentRuntimeClient:
             )
         thread_id = new_thread_id()
 
-        response_payload = await self._post_json(
-            url=self._build_query_url(agent_config),
-            payload={
-                "class_method": "async_create_session",
-                "input": {"user_id": user_id},
-            },
-        )
-        session_payload = response_payload.get("output", response_payload)
-        session_id = str(session_payload.get("id", "")).strip()
+        session_id = None
+        # 1. Try class_method: async_create_session via :query first
+        try:
+            response_payload = await self._post_json(
+                url=self._build_query_url(agent_config),
+                payload={
+                    "class_method": "async_create_session",
+                    "input": {"user_id": user_id},
+                },
+            )
+            session_payload = response_payload.get("output", response_payload)
+            session_id = str(session_payload.get("id", "")).strip()
+        except ApiError as exc:
+            # If :query returned 404/502 (reasoning engine uses native Agent Platform REST API),
+            # fall back to native Vertex AI Agent Platform session creation
+            if exc.status_code in {404, 502}:
+                session_id = await self._create_native_session(agent_config, user_id)
+            else:
+                raise
+
+        if not session_id:
+            session_id = await self._create_native_session(agent_config, user_id)
+
         if not session_id:
             raise ApiError(
                 502,
                 "missing_session_id",
                 "Agent Runtime did not return a session id.",
-                {"response": response_payload},
             )
         return SessionResult(session_id=session_id, thread_id=thread_id)
+
+    async def _create_native_session(
+        self,
+        agent_config: AgentConfig,
+        user_id: str,
+    ) -> str:
+        url = self._build_sessions_url(agent_config)
+        response_payload = await self._post_json(
+            url=url,
+            payload={"user_id": user_id},
+        )
+        session_info = response_payload.get("response", response_payload)
+        session_name = str(session_info.get("name", "") or response_payload.get("name", "")).strip()
+        if session_name:
+            return session_name.rstrip("/").split("/")[-1]
+        session_id = str(session_info.get("id", "") or response_payload.get("id", "")).strip()
+        return session_id
 
     async def chat(
         self,
@@ -133,30 +163,52 @@ class AgentRuntimeClient:
         session_id: str,
         message: str,
     ) -> BufferedAgentResponse:
-        response_payload = await self._post_json(
-            url=self._build_query_url(agent_config),
-            payload={
-                "class_method": "async_buffered_query",
-                "input": {
-                    "user_id": user_id,
-                    "session_id": session_id,
-                    "message": message,
-                    "run_config": BUFFERED_RUN_CONFIG,
+        try:
+            response_payload = await self._post_json(
+                url=self._build_query_url(agent_config),
+                payload={
+                    "class_method": "async_buffered_query",
+                    "input": {
+                        "user_id": user_id,
+                        "session_id": session_id,
+                        "message": message,
+                        "run_config": BUFFERED_RUN_CONFIG,
+                    },
                 },
-            },
-        )
-        raw_events = self._extract_event_payloads(response_payload)
-        assembler = TurnAssembler()
-        for event in raw_events:
-            assembler.add_event(event)
-            for fragment in self._extract_text_fragments(event):
-                assembler.add_text(fragment)
+            )
+            raw_events = self._extract_event_payloads(response_payload)
+            assembler = TurnAssembler()
+            for event in raw_events:
+                assembler.add_event(event)
+                for fragment in self._extract_text_fragments(event):
+                    assembler.add_text(fragment)
 
-        return BufferedAgentResponse(
-            reply_text=assembler.reply_text(),
-            raw_events=raw_events,
-            usage=assembler.usage,
-        )
+            return BufferedAgentResponse(
+                reply_text=assembler.reply_text(),
+                raw_events=raw_events,
+                usage=assembler.usage,
+            )
+        except ApiError as exc:
+            if exc.status_code in {404, 502}:
+                # Fall back to stream aggregation for streaming-first ADK agents
+                assembler = TurnAssembler()
+                raw_events = []
+                async for stream_event in self.stream_chat_events(
+                    agent_config=agent_config,
+                    user_id=user_id,
+                    session_id=session_id,
+                    message=message,
+                ):
+                    raw_events.append(stream_event.payload)
+                    assembler.add_event(stream_event.payload)
+                    for fragment in self._extract_text_fragments(stream_event.payload):
+                        assembler.add_text(fragment)
+                return BufferedAgentResponse(
+                    reply_text=assembler.reply_text(),
+                    raw_events=raw_events,
+                    usage=assembler.usage,
+                )
+            raise
 
     async def stream_chat_events(
         self,
@@ -185,7 +237,31 @@ class AgentRuntimeClient:
                 json=payload,
             ) as response:
                 if response.status_code >= 400:
-                    raise await self._stream_error(response)
+                    # If async_stream_query fails, try standard stream_query fallback
+                    fallback_payload = {
+                        "class_method": "stream_query",
+                        "input": {
+                            "user_id": user_id,
+                            "session_id": session_id,
+                            "message": message,
+                            "run_config": STREAM_RUN_CONFIG,
+                        },
+                    }
+                    async with self._http_client.stream(
+                        "POST",
+                        self._build_stream_query_url(agent_config),
+                        headers=headers,
+                        json=fallback_payload,
+                    ) as fallback_response:
+                        if fallback_response.status_code >= 400:
+                            raise await self._stream_error(fallback_response)
+                        async for event_name, data in self._iter_sse_messages(fallback_response):
+                            if not data or data == "[DONE]":
+                                continue
+                            for parsed in self._parse_json_messages(data):
+                                yield UpstreamStreamEvent(event_name=event_name, payload=parsed)
+                        return
+
                 async for event_name, data in self._iter_sse_messages(response):
                     if not data or data == "[DONE]":
                         continue
@@ -301,6 +377,18 @@ class AgentRuntimeClient:
         return (
             f"https://{agent_config.region}-aiplatform.googleapis.com/v1/"
             f"{agent_config.resource_name}:streamQuery?alt=sse"
+        )
+
+    def _build_sessions_url(self, agent_config: AgentConfig) -> str:
+        if not agent_config.resource_name:
+            raise ApiError(
+                500,
+                "missing_agent_runtime_resource_name",
+                "The Agent Runtime agent is missing resource_name configuration.",
+            )
+        return (
+            f"https://{agent_config.region}-aiplatform.googleapis.com/v1/"
+            f"{agent_config.resource_name}/sessions"
         )
 
     async def _iter_sse_messages(self, response: httpx.Response):
