@@ -151,28 +151,47 @@ agents:
 | `streaming_enabled`| boolean| Set `true` if the agent supports Server-Sent Events (SSE). |
 | `persistence_enabled`| boolean| Set `true` to record turns in Firestore and settle wallet usage. |
 | `auth_policy` | string | `"firebase"` (enforces user authentication). |
+| `model` | string | *(Optional)* Override model ID (e.g. `"gemini-3.5-flash"`, `"gemini-2.5-pro"`). |
 
 ---
 
-## Step 4: Verify Pricing / Model Catalog (Worker)
+## Step 4: Multi-Model Dynamic Pricing & Automatic Model Detection
 
-If your new agent uses **Gemini 2.5 Flash** or **Gemini 2.5 Pro**, the pricing rates are already built-in!
+The V3 Middleware features an intelligent **Multi-Model Dynamic Pricing Engine** with **Automatic Upstream Model Detection**:
 
-If the new agent uses a different model (e.g., Claude, GPT-4o, or a custom open model), verify or add the model pricing rate in `config/billing.test.yaml` and `config/billing.prod.yaml`:
+### 1. Automatic Upstream Detection
+When an agent responds, the Gateway automatically inspects the upstream Vertex AI response events for metadata fields such as `"model_version": "gemini-3.5-flash"`, `"model_name"`, or `"model"`. 
+- You do **not** need to manually tag every single turn.
+- If an agent switches from Gemini 2.5 Flash to Gemini 3.5 Flash or Gemini 2.5 Pro, the Gateway automatically matches the upstream version and prices the turn accordingly.
+
+### 2. Built-in Model Pricing Rates
+
+The engine includes pre-calibrated rate cards for Google's model catalog:
+
+| Model ID | Input Rate (per 1M tokens) | Audio Input (per 1M tokens) | Output / Thinking (per 1M tokens) | Pricing Version Tag |
+| :--- | :--- | :--- | :--- | :--- |
+| **`gemini-3.5-flash`** | **$1.50** | **$3.00** | **$9.00** | `gemini-3.5-flash-usd-on-demand-2026-08-23` |
+| **`gemini-2.5-flash`** | **$0.30** | **$1.00** | **$2.50** | `gemini-2.5-flash-usd-on-demand-2026-08-11` |
+| **`gemini-2.5-pro`** | **$1.25** | **$1.25** | **$10.00** | `gemini-2.5-pro-usd-on-demand-2026-08-11` |
+| **`gemini-1.5-flash`** | **$0.075** | **$0.075** | **$0.30** | `gemini-1.5-flash-usd-on-demand-2026-08-11` |
+| **`gemini-1.5-pro`** | **$1.25** | **$1.25** | **$5.00** | `gemini-1.5-pro-usd-on-demand-2026-08-11` |
+
+### 3. Adding New Models to the Catalog
+If an agent introduces a new model (e.g., Claude 3.5 Sonnet, GPT-4o, or a custom fine-tuned model), add the model rate in `config/billing.test.yaml` (and `prod.yaml`):
 
 ```yaml
 models:
-  gemini-2.5-flash:
-    input_usd_per_million: 0.30
-    output_usd_per_million: 2.50
+  gemini-3.5-flash:
+    input_usd_per_million: 1.50
+    output_usd_per_million: 9.00
   
-  # Example: Adding a new model
+  # Example: External model
   claude-3-5-sonnet:
     input_usd_per_million: 3.00
     output_usd_per_million: 15.00
 ```
 
-The Persistence Worker automatically looks up the model returned in the turn metadata, matches the rate, and debits the user's wallet with nano-cent accuracy.
+The Gateway and Persistence Worker automatically match the model returned in the turn metadata, calculate exact micro-costs with 6 decimal places, and settle the user's wallet with nano-cent mathematical precision.
 
 ---
 

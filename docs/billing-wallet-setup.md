@@ -259,6 +259,28 @@ The Billing API exposes a cryptographically-verified Stripe webhook endpoint at:
    - `invoice.paid`: Fulfills recurring monthly service fee payments. Initial combined checkout invoices (already credited by checkout session) are acknowledged with `200 OK` (outcome `ignored`).
    - `customer.subscription.*`: Updates subscription state. Unmatched or test events without metadata return `200 OK` (outcome `ignored`) to prevent Stripe delivery retries.
 
+## Multi-Model Token Pricing & Dynamic Upstream Detection
+
+The Gateway and Persistence Worker employ an automated **Multi-Model Dynamic Pricing Engine**:
+
+### 1. Dynamic Upstream Detection
+- When an agent completes a turn, the Gateway extracts token counts and inspects the upstream Vertex AI response events for `"model_version": "gemini-3.5-flash"` (or `model_name` / `model`).
+- Agents can also explicitly declare their model in `config/agents.*.yaml` via `model: gemini-3.5-flash`.
+
+### 2. Supported Model Rates
+| Model ID | Input Rate (per 1M tokens) | Audio Input (per 1M tokens) | Output / Thinking (per 1M tokens) | Pricing Version Tag |
+| :--- | :--- | :--- | :--- | :--- |
+| **`gemini-3.5-flash`** | **$1.50** | **$3.00** | **$9.00** | `gemini-3.5-flash-usd-on-demand-2026-08-23` |
+| **`gemini-2.5-flash`** | **$0.30** | **$1.00** | **$2.50** | `gemini-2.5-flash-usd-on-demand-2026-08-11` |
+| **`gemini-2.5-pro`** | **$1.25** | **$1.25** | **$10.00** | `gemini-2.5-pro-usd-on-demand-2026-08-11` |
+| **`gemini-1.5-flash`** | **$0.075** | **$0.075** | **$0.30** | `gemini-1.5-flash-usd-on-demand-2026-08-11` |
+| **`gemini-1.5-pro`** | **$1.25** | **$1.25** | **$5.00** | `gemini-1.5-pro-usd-on-demand-2026-08-11` |
+
+### 3. Settlement & Audit Record
+- The exact micro-cost is calculated with 6 decimal places and converted to integer nanos (`1 USD = 1,000,000,000 nanos`).
+- The turn record in `agent_threads_v3/{thread_id}/messages_v3/{turn_id}_assistant` and `agent_billing_ledger_v3/{turn_id}` records `pricing_model`, `pricing_version`, `billable_tokens`, `pricing`, and `estimated_cost_usd`.
+- The Persistence Worker debits the settled amount from `customer_wallets_v3.available_credit_nanos` and releases the temporary reservation hold atomically.
+
 ## Development-only wallet provisioning
 
 Authenticate locally as an operator for the development project, then run:
