@@ -177,7 +177,7 @@ class AgentRuntimeClient:
                 },
             )
             raw_events = self._extract_event_payloads(response_payload)
-            assembler = TurnAssembler()
+            assembler = TurnAssembler(model_name=agent_config.model)
             for event in raw_events:
                 assembler.add_event(event)
                 for fragment in self._extract_text_fragments(event):
@@ -191,7 +191,7 @@ class AgentRuntimeClient:
         except ApiError as exc:
             if exc.status_code in {404, 502}:
                 # Fall back to stream aggregation for streaming-first ADK agents
-                assembler = TurnAssembler()
+                assembler = TurnAssembler(model_name=agent_config.model)
                 raw_events = []
                 async for stream_event in self.stream_chat_events(
                     agent_config=agent_config,

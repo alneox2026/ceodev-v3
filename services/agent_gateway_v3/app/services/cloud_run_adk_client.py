@@ -124,7 +124,7 @@ class CloudRunAdkClient:
             },
         )
         raw_events = self._extract_event_payloads(response_payload)
-        assembler = TurnAssembler()
+        assembler = TurnAssembler(model_name=agent_config.model)
         for event in raw_events:
             assembler.add_event(event)
             for fragment in self._extract_text_fragments(event):

@@ -29,13 +29,14 @@ class AgentConfig(BaseModel):
     streaming_enabled: bool = False
     persistence_enabled: bool = True
     auth_policy: str = "firebase"
+    model: str | None = None
 
     @field_validator("agent_id")
     @classmethod
     def validate_agent(cls, value: str) -> str:
         return validate_agent_id(value)
 
-    @field_validator("base_url", "app_name", "audience", "resource_name")
+    @field_validator("base_url", "app_name", "audience", "resource_name", "model")
     @classmethod
     def normalize_optional_string(cls, value: str | None) -> str | None:
         if value is None:

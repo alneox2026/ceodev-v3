@@ -18,6 +18,7 @@ agents:
   maximus88:
     agent_id: maximus88
     backend: agent_runtime
+    model: gemini-3.5-flash
     resource_name: projects/ceo-dev123/locations/us-west1/reasoningEngines/2960720930810101760
     region: us-west1
     streaming_enabled: true

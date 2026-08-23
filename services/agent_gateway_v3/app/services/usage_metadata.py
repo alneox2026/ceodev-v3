@@ -1,4 +1,4 @@
-"""Usage metadata normalization and Gemini 2.5 Flash cost estimates."""
+"""Usage metadata normalization and multi-model cost estimates."""
 
 from __future__ import annotations
 
@@ -6,13 +6,62 @@ from copy import deepcopy
 from typing import Any
 
 
-MODEL_NAME = "gemini-2.5-flash"
-PRICING_VERSION = "gemini-2.5-flash-usd-on-demand-2026-08-11"
-USD_PER_1M_INPUT_TEXT_IMAGE_VIDEO = 0.30
-USD_PER_1M_INPUT_AUDIO = 1.00
-USD_PER_1M_OUTPUT = 2.50
+DEFAULT_MODEL_PRICING: dict[str, dict[str, Any]] = {
+    "gemini-2.5-flash": {
+        "pricing_version": "gemini-2.5-flash-usd-on-demand-2026-08-11",
+        "input_text_image_video": 0.30,
+        "input_audio": 1.00,
+        "output_including_thinking": 2.50,
+    },
+    "gemini-3.5-flash": {
+        "pricing_version": "gemini-3.5-flash-usd-on-demand-2026-08-23",
+        "input_text_image_video": 1.50,
+        "input_audio": 3.00,
+        "output_including_thinking": 9.00,
+    },
+    "gemini-2.5-pro": {
+        "pricing_version": "gemini-2.5-pro-usd-on-demand-2026-08-11",
+        "input_text_image_video": 1.25,
+        "input_audio": 1.25,
+        "output_including_thinking": 10.00,
+    },
+    "gemini-1.5-flash": {
+        "pricing_version": "gemini-1.5-flash-usd-on-demand-2026-08-11",
+        "input_text_image_video": 0.075,
+        "input_audio": 0.075,
+        "output_including_thinking": 0.30,
+    },
+    "gemini-1.5-pro": {
+        "pricing_version": "gemini-1.5-pro-usd-on-demand-2026-08-11",
+        "input_text_image_video": 1.25,
+        "input_audio": 1.25,
+        "output_including_thinking": 5.00,
+    },
+}
+DEFAULT_MODEL_NAME = "gemini-2.5-flash"
 
 _USAGE_KEYS = ("usage_metadata", "usageMetadata")
+
+
+def resolve_model_pricing(raw_model: str | None = None) -> tuple[str, dict[str, Any]]:
+    """Resolves model name and pricing catalog rates."""
+    if not raw_model:
+        return DEFAULT_MODEL_NAME, DEFAULT_MODEL_PRICING[DEFAULT_MODEL_NAME]
+
+    cleaned = str(raw_model).strip().lower()
+    if cleaned.startswith("models/"):
+        cleaned = cleaned[7:]
+
+    # Exact match
+    if cleaned in DEFAULT_MODEL_PRICING:
+        return cleaned, DEFAULT_MODEL_PRICING[cleaned]
+
+    # Substring / variant match (e.g. "gemini-3.5-flash-001" -> "gemini-3.5-flash")
+    for key, pricing in DEFAULT_MODEL_PRICING.items():
+        if key in cleaned or cleaned in key:
+            return key, pricing
+
+    return DEFAULT_MODEL_NAME, DEFAULT_MODEL_PRICING[DEFAULT_MODEL_NAME]
 
 
 def extract_usage_metadata(event: dict[str, Any]) -> dict[str, Any] | None:
@@ -40,8 +89,11 @@ def extract_usage_metadata(event: dict[str, Any]) -> dict[str, Any] | None:
     return walk(event)
 
 
-def normalize_usage_metadata(usage_metadata: dict[str, Any]) -> dict[str, Any]:
-    """Preserve raw usage fields while adding normalized counts and cost fields."""
+def normalize_usage_metadata(
+    usage_metadata: dict[str, Any],
+    model_name: str | None = None,
+) -> dict[str, Any]:
+    """Preserve raw usage fields while adding normalized counts and dynamic cost fields."""
 
     usage = deepcopy(usage_metadata)
     token_counts = _token_counts(usage_metadata)
@@ -71,42 +123,48 @@ def normalize_usage_metadata(usage_metadata: dict[str, Any]) -> dict[str, Any]:
     ):
         return usage
 
+    model_candidate = (
+        model_name
+        or usage_metadata.get("pricing_model")
+        or usage_metadata.get("model_version")
+        or usage_metadata.get("model_name")
+        or usage_metadata.get("model")
+    )
+    resolved_model, pricing_info = resolve_model_pricing(model_candidate)
+
+    input_rate = pricing_info["input_text_image_video"]
+    audio_rate = pricing_info["input_audio"]
+    output_rate = pricing_info["output_including_thinking"]
+    pricing_version = pricing_info["pricing_version"]
+
     billable_tokens = {
         "input_text_image_video": input_text_image_video_tokens or 0,
         "input_audio": input_audio_tokens or 0,
         "output_including_thinking": output_tokens or 0,
     }
-    usage["pricing_model"] = MODEL_NAME
-    usage["pricing_version"] = PRICING_VERSION
+    usage["pricing_model"] = resolved_model
+    usage["pricing_version"] = pricing_version
     usage["pricing_unit"] = "usd_per_1m_tokens"
     usage["pricing"] = {
-        "input_text_image_video": USD_PER_1M_INPUT_TEXT_IMAGE_VIDEO,
-        "input_audio": USD_PER_1M_INPUT_AUDIO,
-        "output_including_thinking": USD_PER_1M_OUTPUT,
+        "input_text_image_video": input_rate,
+        "input_audio": audio_rate,
+        "output_including_thinking": output_rate,
     }
     usage["billable_tokens"] = billable_tokens
     usage["estimated_cost_usd"] = _round_usd(
-        billable_tokens["input_text_image_video"]
-        * USD_PER_1M_INPUT_TEXT_IMAGE_VIDEO
-        / 1_000_000
-        + billable_tokens["input_audio"] * USD_PER_1M_INPUT_AUDIO / 1_000_000
-        + billable_tokens["output_including_thinking"]
-        * USD_PER_1M_OUTPUT
-        / 1_000_000
+        billable_tokens["input_text_image_video"] * input_rate / 1_000_000
+        + billable_tokens["input_audio"] * audio_rate / 1_000_000
+        + billable_tokens["output_including_thinking"] * output_rate / 1_000_000
     )
     usage["estimated_cost_breakdown_usd"] = {
         "input_text_image_video": _round_usd(
-            billable_tokens["input_text_image_video"]
-            * USD_PER_1M_INPUT_TEXT_IMAGE_VIDEO
-            / 1_000_000
+            billable_tokens["input_text_image_video"] * input_rate / 1_000_000
         ),
         "input_audio": _round_usd(
-            billable_tokens["input_audio"] * USD_PER_1M_INPUT_AUDIO / 1_000_000
+            billable_tokens["input_audio"] * audio_rate / 1_000_000
         ),
         "output_including_thinking": _round_usd(
-            billable_tokens["output_including_thinking"]
-            * USD_PER_1M_OUTPUT
-            / 1_000_000
+            billable_tokens["output_including_thinking"] * output_rate / 1_000_000
         ),
     }
     return usage

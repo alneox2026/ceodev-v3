@@ -74,6 +74,10 @@ def load_registry() -> dict[str, AgentConfig]:
         if runtime_cleanup_override:
             config["runtime_session_cleanup"] = runtime_cleanup_override
 
+        model_override = _env_override(agent_id, "MODEL")
+        if model_override:
+            config["model"] = model_override
+
         agent_config = AgentConfig(**config)
         registry[agent_config.agent_id] = agent_config
     return registry

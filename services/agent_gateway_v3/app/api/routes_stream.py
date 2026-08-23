@@ -285,7 +285,7 @@ async def stream_chat(
     )
 
     async def event_stream() -> AsyncIterator[str]:
-        assembler = TurnAssembler()
+        assembler = TurnAssembler(model_name=agent_config.model)
         diagnostics = StreamDiagnostics()
         yield build_metadata_event(
             {

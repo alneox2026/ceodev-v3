@@ -16,6 +16,7 @@ class TurnAssembler:
     text_fragments: list[str] = field(default_factory=list)
     usage: dict[str, Any] = field(default_factory=dict)
     raw_events: list[dict[str, Any]] = field(default_factory=list)
+    model_name: str | None = None
 
     def add_text(self, value: str) -> str:
         if not value:
@@ -36,12 +37,19 @@ class TurnAssembler:
 
     def add_event(self, event: dict[str, Any]) -> None:
         self.raw_events.append(event)
+        model = (
+            event.get("model_version")
+            or event.get("model_name")
+            or event.get("model")
+        )
+        if model and not self.model_name:
+            self.model_name = str(model).strip()
         usage = extract_usage_metadata(event)
         if usage is not None:
-            self.usage = normalize_usage_metadata(usage)
+            self.usage = normalize_usage_metadata(usage, model_name=self.model_name)
 
     def set_usage(self, usage: dict[str, Any]) -> None:
-        self.usage = normalize_usage_metadata(usage)
+        self.usage = normalize_usage_metadata(usage, model_name=self.model_name)
 
     def reply_text(self) -> str:
         return "".join(self.text_fragments).strip()
