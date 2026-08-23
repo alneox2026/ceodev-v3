@@ -234,6 +234,53 @@ Body:
 
 ---
 
+## Agent Platform & Cloud Run Integration Best Practices
+
+The V3 Gateway contains an intelligent upstream adapter designed to work transparently with any ADK deployment pattern:
+
+### 1. Dual Session Creation Protocols
+Different deployment tools create Vertex AI Reasoning Engines with different session mechanisms:
+* **Native Agent Platform Sessions** (e.g., standard ADK, Google Cloud Console, or custom SDK deployments):
+  The Gateway invokes `POST .../reasoningEngines/{id}/sessions` with `{"user_id": user_id}` and extracts the session ID from the resource name.
+* **Wrapped Runtime Sessions** (e.g., `agents-cli deploy` with `StreamingDefaultAdkApp`):
+  The Gateway invokes `POST .../reasoningEngines/{id}:query` with `{"class_method": "async_create_session"}`.
+
+> [!NOTE]
+> The Gateway automatically attempts the wrapped runtime method first and gracefully falls back to native `/sessions`, ensuring 100% compatibility across all deployment methods.
+
+### 2. Upstream Stream Query Compatibility
+* Standard ADK reasoning engines accept:
+  ```json
+  {
+    "class_method": "stream_query",
+    "input": {
+      "user_id": "...",
+      "session_id": "...",
+      "message": "..."
+    }
+  }
+  ```
+* Wrapped reasoning engines accept `async_stream_query` with `run_config: {"streaming_mode": "sse"}`.
+* The Gateway handles negotiation automatically, so developers do not need to configure upstream parameter shapes.
+
+### 3. Universal Client Endpoints (`/chat` & `/chat/stream`)
+* **Streaming Endpoint (`/v1/agents/{agent_id}/chat/stream`)**: Recommended for real-time typewriter UI in FlutterFlow.
+* **Buffered Endpoint (`/v1/agents/{agent_id}/chat`)**: For standard non-streaming REST calls. If an upstream agent only supports streaming (like standard ADK reasoning engines), the Gateway automatically consumes the stream and aggregates the response into clean JSON.
+
+---
+
+## Verified Agent Types in the V3 Cluster
+
+| Agent ID | Backend | Host Platform | Execution Mode | Model | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `maxima_v3` | `agent_runtime` | Agent Platform | Buffered | Gemini 2.5 Flash | Classic reasoning engine with `query()` |
+| `maxima_agentruntime_streaming_v3` | `agent_runtime` | Agent Platform | Streaming | Gemini 2.5 Flash | Wrapped with `StreamingDefaultAdkApp` |
+| `maximus88` | `agent_runtime` | Agent Platform | Streaming | Gemini 3.5 Flash | Standard ADK reasoning engine (`main:app`) |
+| `maxima_cloudrun_v3` | `cloud_run_adk` | Cloud Run | Buffered | Gemini 2.5 Flash | Private Cloud Run service + Session RE |
+| `maxima_cloudrun_stream_v3` | `cloud_run_adk` | Cloud Run | Streaming | Gemini 2.5 Flash | Private Cloud Run service + Session RE |
+
+---
+
 ## Summary
 
 To add any new agent to your cluster:
@@ -241,4 +288,4 @@ To add any new agent to your cluster:
 2. Grant IAM invocation permissions to Gateway service account.
 3. Add the agent entry to `config/agents.prod.yaml` (and `dev.yaml`).
 4. Rebuild and redeploy the Gateway via Cloud Shell (`cloudshell_deploy_middleware_v3.sh`).
-5. Call `/v1/agents/{new_agent_id}/chat/stream` from FlutterFlow!
+5. Call `/v1/agents/{new_agent_id}/chat/stream` or `/chat` from FlutterFlow!
