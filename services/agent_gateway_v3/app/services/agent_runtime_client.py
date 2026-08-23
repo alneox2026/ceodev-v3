@@ -237,14 +237,13 @@ class AgentRuntimeClient:
                 json=payload,
             ) as response:
                 if response.status_code >= 400:
-                    # If async_stream_query fails, try standard stream_query fallback
+                    # If async_stream_query fails, try standard stream_query fallback (without run_config for standard ADK compatibility)
                     fallback_payload = {
                         "class_method": "stream_query",
                         "input": {
                             "user_id": user_id,
                             "session_id": session_id,
                             "message": message,
-                            "run_config": STREAM_RUN_CONFIG,
                         },
                     }
                     async with self._http_client.stream(
