@@ -3,21 +3,30 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import os
+from pathlib import Path
 from typing import Any
+import yaml
 
 
 DEFAULT_MODEL_PRICING: dict[str, dict[str, Any]] = {
-    "gemini-2.5-flash": {
-        "pricing_version": "gemini-2.5-flash-usd-on-demand-2026-08-11",
-        "input_text_image_video": 0.30,
-        "input_audio": 1.00,
-        "output_including_thinking": 2.50,
+    "gemini-3.7-flash": {
+        "pricing_version": "gemini-3.7-flash-usd-on-demand-2026-08-24",
+        "input_text_image_video": 0.75,
+        "input_audio": 1.50,
+        "output_including_thinking": 3.75,
     },
     "gemini-3.5-flash": {
         "pricing_version": "gemini-3.5-flash-usd-on-demand-2026-08-23",
         "input_text_image_video": 1.50,
         "input_audio": 3.00,
         "output_including_thinking": 9.00,
+    },
+    "gemini-2.5-flash": {
+        "pricing_version": "gemini-2.5-flash-usd-on-demand-2026-08-11",
+        "input_text_image_video": 0.30,
+        "input_audio": 1.00,
+        "output_including_thinking": 2.50,
     },
     "gemini-2.5-pro": {
         "pricing_version": "gemini-2.5-pro-usd-on-demand-2026-08-11",
@@ -43,25 +52,90 @@ DEFAULT_MODEL_NAME = "gemini-2.5-flash"
 _USAGE_KEYS = ("usage_metadata", "usageMetadata")
 
 
+def _load_models_from_yaml_catalog() -> dict[str, dict[str, Any]]:
+    """Dynamically load model rates from billing YAML catalog files if available."""
+    catalog: dict[str, dict[str, Any]] = {}
+    search_paths = [
+        os.getenv("BILLING_CATALOG_PATH"),
+        "config/billing.prod.yaml",
+        "config/billing.test.yaml",
+        "/app/config/billing.prod.yaml",
+        "/app/config/billing.test.yaml",
+    ]
+    for path_str in search_paths:
+        if not path_str:
+            continue
+        try:
+            path = Path(path_str).resolve()
+            if path.exists() and path.is_file():
+                raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+                if isinstance(raw, dict) and "models" in raw and isinstance(raw["models"], dict):
+                    for model_id, rates in raw["models"].items():
+                        if isinstance(rates, dict):
+                            cleaned_id = str(model_id).strip().lower()
+                            default_rates = DEFAULT_MODEL_PRICING.get(cleaned_id, {})
+                            input_usd = float(
+                                rates.get(
+                                    "input_usd_per_million",
+                                    default_rates.get("input_text_image_video", 0.30),
+                                )
+                            )
+                            output_usd = float(
+                                rates.get(
+                                    "output_usd_per_million",
+                                    default_rates.get("output_including_thinking", 2.50),
+                                )
+                            )
+                            audio_usd = float(
+                                rates.get(
+                                    "input_audio_usd_per_million",
+                                    default_rates.get("input_audio", input_usd * 2.0),
+                                )
+                            )
+                            catalog[cleaned_id] = {
+                                "pricing_version": default_rates.get(
+                                    "pricing_version", f"{cleaned_id}-usd-on-demand-catalog"
+                                ),
+                                "input_text_image_video": input_usd,
+                                "input_audio": audio_usd,
+                                "output_including_thinking": output_usd,
+                            }
+        except Exception:
+            pass
+    return catalog
+
+
 def resolve_model_pricing(raw_model: str | None = None) -> tuple[str, dict[str, Any]]:
-    """Resolves model name and pricing catalog rates."""
+    """Resolves model name and pricing catalog rates from YAML catalog and presets."""
+    active_catalog = dict(DEFAULT_MODEL_PRICING)
+    yaml_catalog = _load_models_from_yaml_catalog()
+    active_catalog.update(yaml_catalog)
+
     if not raw_model:
-        return DEFAULT_MODEL_NAME, DEFAULT_MODEL_PRICING[DEFAULT_MODEL_NAME]
+        return DEFAULT_MODEL_NAME, active_catalog.get(
+            DEFAULT_MODEL_NAME, DEFAULT_MODEL_PRICING[DEFAULT_MODEL_NAME]
+        )
 
     cleaned = str(raw_model).strip().lower()
     if cleaned.startswith("models/"):
         cleaned = cleaned[7:]
 
     # Exact match
-    if cleaned in DEFAULT_MODEL_PRICING:
-        return cleaned, DEFAULT_MODEL_PRICING[cleaned]
+    if cleaned in active_catalog:
+        return cleaned, active_catalog[cleaned]
 
-    # Substring / variant match (e.g. "gemini-3.5-flash-001" -> "gemini-3.5-flash")
-    for key, pricing in DEFAULT_MODEL_PRICING.items():
+    # Substring / variant match (e.g. "gemini-3.7-flash-001" -> "gemini-3.7-flash")
+    for key, pricing in active_catalog.items():
         if key in cleaned or cleaned in key:
             return key, pricing
 
-    return DEFAULT_MODEL_NAME, DEFAULT_MODEL_PRICING[DEFAULT_MODEL_NAME]
+    # Preserve custom model identifier with default fallback rates
+    return cleaned, {
+        "pricing_version": f"{cleaned}-usd-on-demand-fallback",
+        "input_text_image_video": 0.30,
+        "input_audio": 1.00,
+        "output_including_thinking": 2.50,
+    }
 
 
 def extract_usage_metadata(event: dict[str, Any]) -> dict[str, Any] | None:

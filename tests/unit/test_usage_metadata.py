@@ -100,3 +100,23 @@ def test_normalize_usage_metadata_prices_gemini_3_5_flash_tokens() -> None:
     assert usage["billable_tokens"]["output_including_thinking"] == 200
     # 132 * 1.50 / 1M = 0.000198; 200 * 9.00 / 1M = 0.001800; total = 0.001998
     assert usage["estimated_cost_usd"] == 0.001998
+
+
+def test_normalize_usage_metadata_prices_gemini_3_7_flash_tokens() -> None:
+    usage = normalize_usage_metadata(
+        {
+            "prompt_token_count": 280,
+            "candidates_token_count": 50,
+            "thoughts_token_count": 29,
+            "total_token_count": 359,
+        },
+        model_name="gemini-3.7-flash",
+    )
+
+    assert usage["pricing_model"] == "gemini-3.7-flash"
+    assert usage["pricing"]["input_text_image_video"] == 0.75
+    assert usage["pricing"]["output_including_thinking"] == 3.75
+    assert usage["billable_tokens"]["input_text_image_video"] == 280
+    assert usage["billable_tokens"]["output_including_thinking"] == 79
+    # 280 * 0.75 / 1M = 0.000210; 79 * 3.75 / 1M = 0.00029625; total = 0.00050625
+    assert usage["estimated_cost_usd"] == 0.00050625
