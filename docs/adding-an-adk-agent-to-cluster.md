@@ -157,12 +157,12 @@ agents:
 
 ## Step 4: Multi-Model Dynamic Pricing & Automatic Model Detection
 
-The V3 Middleware features an intelligent **Multi-Model Dynamic Pricing Engine** with **Automatic Upstream Model Detection**:
+The V3 Middleware features an intelligent **Multi-Model Dynamic Pricing Engine** with **Automatic Upstream Model Detection** and **Dynamic YAML Catalog Loading**:
 
 ### 1. Automatic Upstream Detection
-When an agent responds, the Gateway automatically inspects the upstream Vertex AI response events for metadata fields such as `"model_version": "gemini-3.5-flash"`, `"model_name"`, or `"model"`. 
+When an agent responds, the Gateway automatically inspects the upstream Vertex AI response events for metadata fields such as `"model_version": "gemini-3.7-flash"`, `"model_name"`, or `"model"`. 
 - You do **not** need to manually tag every single turn.
-- If an agent switches from Gemini 2.5 Flash to Gemini 3.5 Flash or Gemini 2.5 Pro, the Gateway automatically matches the upstream version and prices the turn accordingly.
+- If an agent switches from Gemini 2.5 Flash to Gemini 3.5 Flash, Gemini 3.7 Flash, or Gemini 2.5 Pro, the Gateway automatically matches the upstream version and prices the turn accordingly.
 
 ### 2. Built-in Model Pricing Rates
 
@@ -170,26 +170,30 @@ The engine includes pre-calibrated rate cards for Google's model catalog:
 
 | Model ID | Input Rate (per 1M tokens) | Audio Input (per 1M tokens) | Output / Thinking (per 1M tokens) | Pricing Version Tag |
 | :--- | :--- | :--- | :--- | :--- |
+| **`gemini-3.7-flash`** | **$0.75** | **$1.50** | **$3.75** | `gemini-3.7-flash-usd-on-demand-2026-08-24` |
 | **`gemini-3.5-flash`** | **$1.50** | **$3.00** | **$9.00** | `gemini-3.5-flash-usd-on-demand-2026-08-23` |
 | **`gemini-2.5-flash`** | **$0.30** | **$1.00** | **$2.50** | `gemini-2.5-flash-usd-on-demand-2026-08-11` |
 | **`gemini-2.5-pro`** | **$1.25** | **$1.25** | **$10.00** | `gemini-2.5-pro-usd-on-demand-2026-08-11` |
 | **`gemini-1.5-flash`** | **$0.075** | **$0.075** | **$0.30** | `gemini-1.5-flash-usd-on-demand-2026-08-11` |
 | **`gemini-1.5-pro`** | **$1.25** | **$1.25** | **$5.00** | `gemini-1.5-pro-usd-on-demand-2026-08-11` |
 
-### 3. Adding New Models to the Catalog
-If an agent introduces a new model (e.g., Claude 3.5 Sonnet, GPT-4o, or a custom fine-tuned model), add the model rate in `config/billing.test.yaml` (and `prod.yaml`):
+### 3. Dynamic YAML Catalog Auto-Loader
+If an agent introduces a new model (e.g., Claude 3.5 Sonnet, GPT-4o, or a custom fine-tuned model), simply add the model rate in `config/billing.prod.yaml` (and `test.yaml`):
 
 ```yaml
 models:
-  gemini-3.5-flash:
-    input_usd_per_million: 1.50
-    output_usd_per_million: 9.00
+  gemini-3.7-flash:
+    input_usd_per_million: 0.75
+    output_usd_per_million: 3.75
   
   # Example: External model
   claude-3-5-sonnet:
     input_usd_per_million: 3.00
     output_usd_per_million: 15.00
 ```
+
+> [!TIP]
+> The Gateway dynamically loads all models defined under `models:` in `config/billing.prod.yaml` at runtime! Any model rate added to the YAML file is automatically available across the cluster without changing Python code.
 
 The Gateway and Persistence Worker automatically match the model returned in the turn metadata, calculate exact micro-costs with 6 decimal places, and settle the user's wallet with nano-cent mathematical precision.
 
@@ -294,7 +298,8 @@ Different deployment tools create Vertex AI Reasoning Engines with different ses
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `maxima_v3` | `agent_runtime` | Agent Platform | Buffered | Gemini 2.5 Flash | Classic reasoning engine with `query()` |
 | `maxima_agentruntime_streaming_v3` | `agent_runtime` | Agent Platform | Streaming | Gemini 2.5 Flash | Wrapped with `StreamingDefaultAdkApp` |
-| `maximus88` | `agent_runtime` | Agent Platform | Streaming | Gemini 3.5 Flash | Standard ADK reasoning engine (`main:app`) |
+| `maximus88` | `agent_runtime` | Agent Platform | Streaming | Gemini 3.5 Flash | Standard ADK reasoning engine (`main:app`, us-west1) |
+| `baris` | `agent_runtime` | Agent Platform | Streaming | Gemini 3.7 Flash | Standard ADK reasoning engine (us-central1) |
 | `maxima_cloudrun_v3` | `cloud_run_adk` | Cloud Run | Buffered | Gemini 2.5 Flash | Private Cloud Run service + Session RE |
 | `maxima_cloudrun_stream_v3` | `cloud_run_adk` | Cloud Run | Streaming | Gemini 2.5 Flash | Private Cloud Run service + Session RE |
 

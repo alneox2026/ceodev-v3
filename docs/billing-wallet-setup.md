@@ -270,6 +270,7 @@ The Gateway and Persistence Worker employ an automated **Multi-Model Dynamic Pri
 ### 2. Supported Model Rates
 | Model ID | Input Rate (per 1M tokens) | Audio Input (per 1M tokens) | Output / Thinking (per 1M tokens) | Pricing Version Tag |
 | :--- | :--- | :--- | :--- | :--- |
+| **`gemini-3.7-flash`** | **$0.75** | **$1.50** | **$3.75** | `gemini-3.7-flash-usd-on-demand-2026-08-24` |
 | **`gemini-3.5-flash`** | **$1.50** | **$3.00** | **$9.00** | `gemini-3.5-flash-usd-on-demand-2026-08-23` |
 | **`gemini-2.5-flash`** | **$0.30** | **$1.00** | **$2.50** | `gemini-2.5-flash-usd-on-demand-2026-08-11` |
 | **`gemini-2.5-pro`** | **$1.25** | **$1.25** | **$10.00** | `gemini-2.5-pro-usd-on-demand-2026-08-11` |
