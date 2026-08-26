@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from functools import lru_cache
 import os
 from pathlib import Path
 from typing import Any
@@ -52,6 +53,7 @@ DEFAULT_MODEL_NAME = "gemini-2.5-flash"
 _USAGE_KEYS = ("usage_metadata", "usageMetadata")
 
 
+@lru_cache(maxsize=1)
 def _load_models_from_yaml_catalog() -> dict[str, dict[str, Any]]:
     """Dynamically load model rates from billing YAML catalog files if available."""
     catalog: dict[str, dict[str, Any]] = {}
