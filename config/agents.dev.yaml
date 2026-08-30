@@ -7,14 +7,6 @@ agents:
     streaming_enabled: false
     persistence_enabled: true
     auth_policy: firebase
-  maxima_agentruntime_streaming_v3:
-    agent_id: maxima_agentruntime_streaming_v3
-    backend: agent_runtime
-    resource_name: projects/ceo-dev123/locations/us-central1/reasoningEngines/1267738556093169664
-    region: us-central1
-    streaming_enabled: true
-    persistence_enabled: true
-    auth_policy: firebase
   maximus88:
     agent_id: maximus88
     backend: agent_runtime
@@ -49,16 +41,6 @@ agents:
     app_name: app
     region: us-central1
     streaming_enabled: false
-    persistence_enabled: true
-    auth_policy: firebase
-    runtime_session_cleanup: cloud_run_adk
-  maxima_cloudrun_stream_v3:
-    agent_id: maxima_cloudrun_stream_v3
-    backend: cloud_run_adk
-    base_url: https://maxima-cloudrun-stream-v3-281577273798.us-central1.run.app
-    app_name: app
-    region: us-central1
-    streaming_enabled: true
     persistence_enabled: true
     auth_policy: firebase
     runtime_session_cleanup: cloud_run_adk
