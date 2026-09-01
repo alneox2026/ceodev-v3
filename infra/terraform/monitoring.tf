@@ -1,6 +1,6 @@
 resource "google_logging_metric" "worker_retryable_failures" {
-  name        = "worker_retryable_failures_v3"
-  description = "Counts retryable persistence and delete failures emitted by the Maxima worker v3."
+  name        = "${var.worker_service_name}_retryable_failures"
+  description = "Counts retryable persistence and delete failures emitted by the worker."
   filter      = <<-EOT
 
 resource.type="cloud_run_revision"
@@ -18,14 +18,14 @@ EOT
 }
 
 resource "google_monitoring_alert_policy" "gateway_5xx" {
-  display_name          = "Maxima gateway 5xx responses"
+  display_name          = "${var.gateway_service_name} 5xx responses"
   combiner              = "OR"
   enabled               = true
   notification_channels = var.alert_notification_channels
 
   documentation {
     mime_type = "text/markdown"
-    content   = "The public Maxima gateway is returning 5xx responses. Check Cloud Run logs for `gateway_chat_failed`, `gateway_stream_failed`, or upstream Agent Runtime failures before cutting over more traffic."
+    content   = "The public gateway is returning 5xx responses. Check Cloud Run logs for `gateway_chat_failed`, `gateway_stream_failed`, or upstream agent failures before cutting over more traffic."
   }
 
   conditions {
@@ -56,21 +56,21 @@ EOT
 
   user_labels = {
     component = "gateway"
-    service   = "maxima"
+    service   = "${var.gateway_service_name}"
   }
 
   depends_on = [google_project_service.apis]
 }
 
 resource "google_monitoring_alert_policy" "gateway_latency" {
-  display_name          = "Maxima gateway elevated p95 latency"
+  display_name          = "${var.gateway_service_name} elevated p95 latency"
   combiner              = "OR"
   enabled               = true
   notification_channels = var.alert_notification_channels
 
   documentation {
     mime_type = "text/markdown"
-    content   = "Maxima gateway p95 request latency is above the launch threshold. Compare against the buffered launch baseline before enabling more traffic or any streaming UX."
+    content   = "Gateway p95 request latency is above the launch threshold. Check logs before cutting over more traffic."
   }
 
   conditions {
@@ -100,21 +100,21 @@ EOT
 
   user_labels = {
     component = "gateway"
-    service   = "maxima"
+    service   = "${var.gateway_service_name}"
   }
 
   depends_on = [google_project_service.apis]
 }
 
 resource "google_monitoring_alert_policy" "worker_retryable_failures" {
-  display_name          = "Maxima worker retryable failures"
+  display_name          = "${var.worker_service_name} retryable failures"
   combiner              = "OR"
   enabled               = true
   notification_channels = var.alert_notification_channels
 
   documentation {
     mime_type = "text/markdown"
-    content   = "The Maxima worker reported retryable failures while persisting turns or deleting runtime sessions. Inspect `worker_event_persist_retryable_failure` and `worker_thread_delete_retryable_failure` logs and confirm Eventarc is not entering a retry loop."
+    content   = "The worker reported retryable failures while persisting turns or deleting runtime sessions. Inspect `worker_event_persist_retryable_failure` and `worker_thread_delete_retryable_failure` logs and confirm Eventarc is not entering a retry loop."
   }
 
   conditions {
@@ -144,7 +144,7 @@ EOT
 
   user_labels = {
     component = "worker"
-    service   = "maxima"
+    service   = "${var.worker_service_name}"
   }
 
   depends_on = [

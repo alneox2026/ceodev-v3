@@ -61,10 +61,11 @@ cd "${ROOT_DIR}/infra/terraform"
 # Clean any stale generated tfvars
 rm -f terraform.auto.tfvars.json
 
-# Ensure backend.hcl exists
-if [ ! -f "backend.hcl" ]; then
-  cp backend.hcl.example backend.hcl
-fi
+# Explicitly ensure isolated v3 backend state
+cat > backend.hcl <<EOF
+bucket = "${PROJECT_ID}-tfstate"
+prefix = "ceodev-v3/middleware"
+EOF
 
 terraform init -backend-config=backend.hcl -reconfigure
 
